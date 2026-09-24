@@ -29,7 +29,7 @@ function StatusCell({ m }) {
   );
 }
 
-export default function RevBView({ shaft, rateMode, status, milestones, monthly, chartData }) {
+export default function RevBView({ shaft, modeLabel, status, milestones, monthly, chartData }) {
   const lastSink = milestones.filter(m => m.sink).at(-1);
   const last = milestones.at(-1);
   const fcst = m => m.actualDate ?? m.forecastDate;
@@ -71,7 +71,7 @@ export default function RevBView({ shaft, rateMode, status, milestones, monthly,
         {[
           { c: NAVY, l: "Rev-B baseline (daily)", d: false },
           { c: RED, l: "Actual (daily)", d: false },
-          { c: RED, l: `Forecast (${rateMode})`, d: true },
+          { c: RED, l: `Forecast (${modeLabel})`, d: true },
         ].map((leg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <div style={{ width: 16, height: leg.d ? 0 : 3, background: leg.d ? "none" : leg.c, borderTop: leg.d ? `2px dashed ${leg.c}` : "none" }} />
@@ -79,7 +79,7 @@ export default function RevBView({ shaft, rateMode, status, milestones, monthly,
           </div>
         ))}
         <div style={{ fontSize: 8, color: "#aaa", marginLeft: "auto" }}>
-          Forecasts use the {rateMode} projection plus the remaining Rev-B event durations
+          Forecasts use the projection at {modeLabel} plus the remaining Rev-B event durations
         </div>
       </div>
 

@@ -53,7 +53,8 @@ src/
 │   └── revb.js            Generated from the Rev-B workbook; do not edit
 ├── engine/
 │   ├── projection.js      Pure projection / curve / quarter functions
-│   └── revb.js            Rev-B status, milestone and monthly summaries
+│   ├── revb.js            Rev-B status, milestone and monthly summaries
+│   └── stats.js           Rate statistics from past performance (scenarios)
 ├── components/
 │   ├── KPIBar.jsx
 │   ├── LithologyColumn.jsx
@@ -62,6 +63,7 @@ src/
 │   ├── SCurve.jsx
 │   ├── GanttTimeline.jsx
 │   ├── RevBView.jsx       Rev-B tab: chart, KPIs, milestone + monthly tables
+│   ├── ScenarioView.jsx   Scenarios tab: statistical rate scenarios per shaft
 │   ├── PatternDefs.jsx    Shared SVG hatch patterns
 │   └── useElementHeight.js
 ├── App.jsx                Composition + state
@@ -74,4 +76,5 @@ reference/                 Original single-file prototype + handover doc
 
 - Projections run from the latest reporting date in `src/data/progression.js` (currently 24 Sep 2026), so adding a new row moves "today" forward automatically.
 - Depth scale, lithology column, projection table, S-curve, Gantt and Rev-B forecasts are all driven from the same projection engine: change rates or override the current depth and everything updates.
+- Rate modes: **Geology** (per-formation rates), **Timeline** (quarterly rates) and **Stats** (a constant rate from past performance). In Stats mode, pick a look-back window (whole project, last 6 or 3 complete months) and a statistic (worst, P25, median, mean, P75, best of the monthly rates). The Scenarios tab compares all of them; click a cell to apply it. These follow the workbook's "Sched Summary" sheet but are calculated from `progression.js`, so they update with each new month-end row.
 - Rev-B slippage is shown per milestone (actual or forecast date minus the Rev-B date). Forecasts add the remaining Rev-B event durations (breakthrough, punch list, etc.) to the projected sinking dates.

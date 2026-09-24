@@ -2,13 +2,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { daysBetween, fmtDate, fmtShort, getFormationAt } from "../engine/projection.js";
 
 export default function SCurve({
-  shaft, scurveData, rateMode, today, curDepth,
+  shaft, scurveData, modeLabel, today, curDepth,
   variance, plannedAtToday, ptdDays, ptdRate,
 }) {
   const legend = [
     { c: "#163D4C", l: "Planned (geology rates)", d: false },
     { c: "#E60033", l: "Actual (EOM data)", d: false },
-    { c: "#E60033", l: rateMode === "geology" ? "Projected (geology)" : "Projected (timeline)", d: true },
+    { c: "#E60033", l: `Projected (${modeLabel})`, d: true },
   ];
 
   return (

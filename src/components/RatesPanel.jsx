@@ -1,7 +1,8 @@
 import { RATE_GROUPS, LOWER_CODES, PRESETS } from "../data/rates.js";
 import {
-  daysBetween, getFormationAt, getRateKey, typeColor,
+  addDays, daysBetween, fmtDate, fmtShort, getFormationAt, getRateKey, typeColor,
 } from "../engine/projection.js";
+import { WINDOWS, STATS } from "../engine/stats.js";
 
 export default function RatesPanel({
   shaft, activeShaft, today, curDepth,
@@ -9,11 +10,13 @@ export default function RatesPanel({
   rates, setRates, handleRate,
   timelineRates, handleTimelineRate,
   setHoveredFm,
+  stats, choice, applyScenario,
 }) {
+  const win = stats.windows[choice.window];
   return (
     <div style={{ width: 250, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #ddd", padding: "10px 10px", overflowY: "auto" }}>
       <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
-        {[{ id: "geology", l: "Geology" }, { id: "timeline", l: "Timeline" }].map(m => (
+        {[{ id: "geology", l: "Geology" }, { id: "timeline", l: "Timeline" }, { id: "stats", l: "Stats" }].map(m => (
           <button
             key={m.id}
             onClick={() => setRateMode(m.id)}
@@ -123,6 +126,56 @@ export default function RatesPanel({
           })}
           <div style={{ fontSize: 8, color: "#888", marginTop: 4, lineHeight: 1.4 }}>
             Calendar-based rates, independent of formation boundaries. ~code shows expected formation at quarter start.
+          </div>
+        </>
+      )}
+
+      {rateMode === "stats" && (
+        <>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
+            {activeShaft} Rate from past performance
+          </div>
+          <div style={{ fontSize: 8, color: "#888", marginBottom: 3, textTransform: "uppercase" }}>Look-back window</div>
+          <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
+            {WINDOWS.map(w => (
+              <button
+                key={w.id}
+                onClick={() => applyScenario(w.id, choice.stat)}
+                style={{
+                  flex: 1, padding: "3px 0", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer", fontSize: 9, fontWeight: 600,
+                  background: choice.window === w.id ? "#163D4C" : "#fff", color: choice.window === w.id ? "#fff" : "#163D4C",
+                }}
+              >{w.short}</button>
+            ))}
+          </div>
+          <div style={{ fontSize: 8, color: "#888", marginBottom: 3 }}>
+            {win.n} months, {fmtShort(win.from)} to {fmtShort(win.to)} · st. dev. {win.sd.toFixed(3)}
+          </div>
+          {STATS.map(s => {
+            const rate = win[s.id];
+            const on = choice.stat === s.id;
+            const finish = addDays(today, Math.max(0, shaft.finalDepth - curDepth) / rate);
+            return (
+              <button
+                key={s.id}
+                onClick={() => applyScenario(choice.window, s.id)}
+                style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "4px 6px", marginBottom: 2,
+                  border: `1px solid ${on ? "#163D4C" : "#ddd"}`, borderRadius: 3, cursor: "pointer",
+                  background: on ? "#163D4C" : "#fff", color: on ? "#fff" : "#333", fontSize: 9, textAlign: "left",
+                }}
+              >
+                <span style={{ fontWeight: 700 }}>
+                  {s.label}{s.hint && <span style={{ fontWeight: 400, opacity: 0.7 }}> ({s.hint})</span>}
+                </span>
+                <span>
+                  <b>{rate.toFixed(3)}</b> m/d · {fmtDate(finish)}
+                </span>
+              </button>
+            );
+          })}
+          <div style={{ fontSize: 8, color: "#888", marginTop: 4, lineHeight: 1.4 }}>
+            Constant rate to final depth from today. P25/P75 are percentiles of the monthly rate: P75 is the faster month rate, not a 75%-confidence date. See the Scenarios tab to compare all of them.
           </div>
         </>
       )}

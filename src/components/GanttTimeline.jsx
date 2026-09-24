@@ -2,7 +2,7 @@ import { LITHO_COLORS, DARK_CODES } from "../data/shafts.js";
 import { MS_DAY, daysBetween, fmtDate, fmtShort } from "../engine/projection.js";
 
 export default function GanttTimeline({
-  shaft, ganttPlanned, projection, rateMode, today, projEnd, projDays, ptdDays, setHoveredFm,
+  shaft, ganttPlanned, projection, modeLabel, today, projEnd, projDays, ptdDays, setHoveredFm,
 }) {
   const ganttStart = shaft.mainSinkStart;
   const ends = [
@@ -24,7 +24,7 @@ export default function GanttTimeline({
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
-        {[{ f: "#163D4C", o: 0.2, l: "Planned" }, { f: "litho", o: 1, l: rateMode === "timeline" ? "Projected (timeline)" : "Projected (geology)" }].map((leg, i) => (
+        {[{ f: "#163D4C", o: 0.2, l: "Planned" }, { f: "litho", o: 1, l: `Projected (${modeLabel})` }].map((leg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <div style={{ width: 12, height: 6, background: leg.f === "litho" ? "#AACFE8" : leg.f, opacity: leg.o, borderRadius: 2, border: "1px solid rgba(0,0,0,0.1)" }} />
             <span style={{ fontSize: 8, color: "#666" }}>{leg.l}</span>

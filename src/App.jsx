@@ -9,6 +9,7 @@ import {
   generateQuarters, daysBetween, depthAtTime, MS_DAY,
 } from "./engine/projection.js";
 import { revbDaily, revbStatus, revbMilestones, revbMonthly } from "./engine/revb.js";
+import { WINDOWS, STATS, scenarioStats, rollingRate, constantRatePoints } from "./engine/stats.js";
 
 import PatternDefs from "./components/PatternDefs.jsx";
 import KPIBar from "./components/KPIBar.jsx";
@@ -18,10 +19,17 @@ import ScheduleTable from "./components/ScheduleTable.jsx";
 import SCurve from "./components/SCurve.jsx";
 import GanttTimeline from "./components/GanttTimeline.jsx";
 import RevBView from "./components/RevBView.jsx";
+import ScenarioView from "./components/ScenarioView.jsx";
 
 const SHAFTS = {
   VS7: { ...VS7, actual: VS7_ACTUAL },
   VS8: { ...VS8, actual: VS8_ACTUAL },
+};
+
+// "median", "P25": word labels lower-cased for use mid-sentence, percentile labels kept as-is.
+const statLabel = id => {
+  const l = STATS.find(s => s.id === id).label;
+  return /^P\d/.test(l) ? l : l.toLowerCase();
 };
 
 const TABS = [
@@ -29,6 +37,7 @@ const TABS = [
   { id: "scurve", l: "S-Curve" },
   { id: "gantt", l: "Gantt" },
   { id: "revb", l: "Rev-B" },
+  { id: "scenarios", l: "Scenarios" },
 ];
 
 export default function App() {
@@ -67,6 +76,23 @@ export default function App() {
     };
   });
 
+  // Stats mode: a constant rate taken from the shaft's monthly history (window + statistic).
+  const [statsChoice, setStatsChoice] = useState({
+    VS7: { window: "m3", stat: "median" },
+    VS8: { window: "m3", stat: "median" },
+  });
+  const shaftStats = useMemo(() => scenarioStats(shaft.actual), [shaft]);
+  const choice = statsChoice[activeShaft];
+  const statsRate = shaftStats.windows[choice.window][choice.stat];
+  const applyScenario = useCallback((window, stat) => {
+    setStatsChoice(p => ({ ...p, [activeShaft]: { window, stat } }));
+    setRateMode("stats");
+  }, [activeShaft]);
+
+  const modeLabel = rateMode === "geology" ? "geology rates"
+    : rateMode === "timeline" ? "quarterly rates"
+    : `${WINDOWS.find(w => w.id === choice.window).short} ${statLabel(choice.stat)}, ${statsRate.toFixed(2)} m/d`;
+
   const projection = useMemo(
     () => computeProjection(shaft, rates, curDepth, today),
     [shaft, rates, curDepth, today],
@@ -75,24 +101,25 @@ export default function App() {
   const totalRemaining = shaft.finalDepth - curDepth;
   const pctComplete = ((curDepth / shaft.finalDepth) * 100).toFixed(1);
 
-  const timelinePts = useMemo(
-    () => rateMode === "timeline"
-      ? computeTimelineProjection(shaft, timelineRates[activeShaft], curDepth, today)
+  // Calendar-driven depth curve for Timeline and Stats modes (null in Geology mode).
+  const curvePts = useMemo(
+    () => rateMode === "timeline" ? computeTimelineProjection(shaft, timelineRates[activeShaft], curDepth, today)
+      : rateMode === "stats" ? constantRatePoints(curDepth, today, statsRate, shaft.finalDepth)
       : null,
-    [rateMode, shaft, timelineRates, activeShaft, curDepth, today],
+    [rateMode, shaft, timelineRates, activeShaft, curDepth, today, statsRate],
   );
 
   // Projected depth curve for the active rate mode.
   const projPts = useMemo(
-    () => timelinePts ?? buildProjectedCurve(shaft, rates, curDepth, today),
-    [timelinePts, shaft, rates, curDepth, today],
+    () => curvePts ?? buildProjectedCurve(shaft, rates, curDepth, today),
+    [curvePts, shaft, rates, curDepth, today],
   );
 
   const projDays = rateMode === "geology"
     ? projection.totalDays
     : (() => {
-        if (!timelinePts) return "—";
-        const l = timelinePts[timelinePts.length - 1];
+        if (!curvePts) return "—";
+        const l = curvePts[curvePts.length - 1];
         return l.depth >= shaft.finalDepth
           ? Math.round((l.date - today.getTime()) / MS_DAY)
           : "Extend qtrs";
@@ -101,8 +128,8 @@ export default function App() {
   const projEnd = rateMode === "geology"
     ? projection.completionDate
     : (() => {
-        if (!timelinePts) return null;
-        const l = timelinePts[timelinePts.length - 1];
+        if (!curvePts) return null;
+        const l = curvePts[curvePts.length - 1];
         return l.depth >= shaft.finalDepth ? new Date(l.date) : null;
       })();
 
@@ -126,8 +153,8 @@ export default function App() {
 
   const ganttPlanned = useMemo(() => buildPlannedTimeline(shaft, rates), [shaft, rates]);
   const ganttProjection = useMemo(
-    () => timelinePts ? computeTimelineFormations(shaft, timelinePts, curDepth) : projection,
-    [timelinePts, shaft, curDepth, projection],
+    () => curvePts ? computeTimelineFormations(shaft, curvePts, curDepth) : projection,
+    [curvePts, shaft, curDepth, projection],
   );
 
   // Rev-B baseline comparison. Status uses the workbook's own daily actuals; forecasts use projPts.
@@ -139,6 +166,14 @@ export default function App() {
     [revb, revbRows, projPts, revbSt],
   );
   const revbMonths = useMemo(() => revbMonthly(revbRows, revbSt.asOf), [revbRows, revbSt]);
+  const perf = useMemo(() => {
+    const act = revbRows.filter(d => d.actual != null);
+    return {
+      sinceRevb: (revbSt.actual - act[0].actual) / daysBetween(new Date(act[0].date), revbSt.asOf),
+      rolling180: rollingRate(revbRows, 180),
+      rolling90: rollingRate(revbRows, 90),
+    };
+  }, [revbRows, revbSt]);
   const revbChartData = useMemo(() => {
     const revbPts = revbRows.map(d => ({ date: d.date, depth: d.revb }));
     const actualPts = revbRows.filter(d => d.actual != null).map(d => ({ date: d.date, depth: d.actual }));
@@ -220,6 +255,9 @@ export default function App() {
           timelineRates={timelineRates}
           handleTimelineRate={handleTimelineRate}
           setHoveredFm={setHoveredFm}
+          stats={shaftStats}
+          choice={choice}
+          applyScenario={applyScenario}
         />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -254,7 +292,7 @@ export default function App() {
               <SCurve
                 shaft={shaft}
                 scurveData={scurveData}
-                rateMode={rateMode}
+                modeLabel={modeLabel}
                 today={today}
                 curDepth={curDepth}
                 variance={variance}
@@ -268,7 +306,7 @@ export default function App() {
                 shaft={shaft}
                 ganttPlanned={ganttPlanned}
                 projection={ganttProjection}
-                rateMode={rateMode}
+                modeLabel={modeLabel}
                 today={today}
                 projEnd={projEnd}
                 projDays={projDays}
@@ -279,11 +317,25 @@ export default function App() {
             {rightTab === "revb" && (
               <RevBView
                 shaft={shaft}
-                rateMode={rateMode}
+                modeLabel={modeLabel}
                 status={revbSt}
                 milestones={revbMs}
                 monthly={revbMonths}
                 chartData={revbChartData}
+              />
+            )}
+            {rightTab === "scenarios" && (
+              <ScenarioView
+                shaft={shaft}
+                today={today}
+                curDepth={curDepth}
+                stats={shaftStats}
+                perf={perf}
+                revbRows={revbRows}
+                revbSinkComplete={revbSt.sinkComplete}
+                choice={choice}
+                statsActive={rateMode === "stats"}
+                applyScenario={applyScenario}
               />
             )}
           </div>
