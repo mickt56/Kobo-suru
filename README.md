@@ -58,5 +58,5 @@ reference/                 Original single-file prototype + handover doc
 
 ## Notes
 
-- `today` is hardcoded in `App.jsx` to `new Date(2026, 4, 19)`. Swap for `new Date()` to make it live.
+- Projections run from the latest reporting date in `src/data/progression.js` (currently 31 Aug 2026), so adding a new EOM row moves "today" forward automatically.
 - Depth scale, lithology column, projection table, S-curve, and Gantt are all driven from the same projection engine — change rates or override the current depth and everything updates.

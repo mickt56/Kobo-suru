@@ -15,7 +15,10 @@ export const VS7_ACTUAL = [
   { date: eom(2026, 1),  depth: 185.1 },
   { date: eom(2026, 2),  depth: 206.4 },
   { date: eom(2026, 3),  depth: 223.4 },
-  { date: new Date(2026, 4, 18), depth: 233.0 },
+  { date: eom(2026, 4),  depth: 242.9 },
+  { date: eom(2026, 5),  depth: 264.5 },
+  { date: eom(2026, 6),  depth: 280.9 },
+  { date: eom(2026, 7),  depth: 302.2 },
 ];
 
 export const VS8_ACTUAL = [
@@ -37,5 +40,8 @@ export const VS8_ACTUAL = [
   { date: eom(2026, 1),  depth: 313.3 },
   { date: eom(2026, 2),  depth: 334.4 },
   { date: eom(2026, 3),  depth: 351.4 },
-  { date: new Date(2026, 4, 18), depth: 369.1 },
+  { date: eom(2026, 4),  depth: 377.0 },
+  { date: eom(2026, 5),  depth: 398.9 },
+  { date: eom(2026, 6),  depth: 424.7 },
+  { date: eom(2026, 7),  depth: 449.1 },
 ];

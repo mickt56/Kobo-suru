@@ -22,7 +22,7 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 
 - Months in `Date` constructors are 0-indexed (Jan = 0).
 - `eom(y, m)` = end of month, i.e. `new Date(y, m+1, 0)`.
-- `today` is hardcoded in `App.jsx` for deterministic screenshots; swap for `new Date()` in production.
+- `today` in `App.jsx` is the latest reporting date across both shafts' progression data, so it advances automatically when a new EOM row is added.
 - Lithology colour palette and `DARK_CODES` (for white-on-dark text) live in `data/shafts.js` because they're geological metadata.
 - The `LOWER` rate group covers Bulli Seam and everything below in VS7. VS8 terminates within Coalcliff SS so its `LOWER` slider is auto-hidden by `RatesPanel`.
 

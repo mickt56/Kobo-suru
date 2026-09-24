@@ -33,7 +33,11 @@ export default function App() {
   const [hoveredFm, setHoveredFm] = useState(null);
   const [depthOverrides, setDepthOverrides] = useState({ VS7: null, VS8: null });
 
-  const today = useMemo(() => new Date(2026, 4, 19), []);
+  // Projections run from the latest reporting date in the progression data.
+  const today = useMemo(
+    () => new Date(Math.max(...Object.values(SHAFTS).map(s => s.actual[s.actual.length - 1].date.getTime()))),
+    [],
+  );
   const shaft = SHAFTS[activeShaft];
   const otherKey = activeShaft === "VS7" ? "VS8" : "VS7";
   const defaultDepth = shaft.actual[shaft.actual.length - 1].depth;
