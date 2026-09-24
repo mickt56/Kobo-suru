@@ -4,7 +4,7 @@ import {
 } from "../engine/projection.js";
 
 export default function RatesPanel({
-  shaft, activeShaft, otherKey, today,
+  shaft, activeShaft, otherKey, today, curDepth,
   rateMode, setRateMode,
   rates, setRates, handleRate,
   timelineRates, handleTimelineRate,
@@ -92,7 +92,6 @@ export default function RatesPanel({
             {activeShaft} Quarterly Rates (m/day)
           </div>
           {timelineRates[activeShaft].map((q, i) => {
-            const curDepth = SHAFTS[activeShaft].actual[SHAFTS[activeShaft].actual.length - 1].depth;
             const depthAtQ = curDepth + timelineRates[activeShaft].slice(0, i).reduce((s, qq) => {
               const es = qq.start > today ? qq.start : today;
               return es >= qq.end ? s : s + qq.rate * daysBetween(es, qq.end);

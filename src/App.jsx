@@ -191,6 +191,7 @@ export default function App() {
           activeShaft={activeShaft}
           otherKey={otherKey}
           today={today}
+          curDepth={curDepth}
           rateMode={rateMode}
           setRateMode={setRateMode}
           rates={rates}
