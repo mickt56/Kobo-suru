@@ -4,19 +4,23 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 
 ## Architecture
 
-- **`src/data/`** — pure data, hand-edited monthly. No imports from anywhere except small helpers.
-  - `shafts.js` — VS7 / VS8 specs, formation sequences, `LITHO_COLORS`, `DARK_CODES`
-  - `progression.js` — monthly EOM actual depth arrays (`VS7_ACTUAL`, `VS8_ACTUAL`)
-  - `rates.js` — `RATE_GROUPS` defaults, `LOWER_CODES`, `PRESETS`
-- **`src/engine/projection.js`** — all pure compute functions: `computeProjection`, `computeTimelineProjection`, `buildPlannedCurve`, `buildProjectedCurve`, `buildPlannedTimeline`, `generateQuarters`, plus date helpers (`addDays`, `daysBetween`, `fmtDate`, `fmtShort`, `eom`). No React, no state.
+- **`src/data/`** — pure data. No imports from anywhere except small helpers.
+  - `shafts.js` — VS7 / VS8 specs, formation sequences, `LITHO_COLORS`, `DARK_CODES` (hand-edited)
+  - `progression.js` — EOM actual depth arrays (`VS7_ACTUAL`, `VS8_ACTUAL`), last row may be month-to-date (hand-edited)
+  - `rates.js` — `RATE_GROUPS` defaults, `LOWER_CODES`, `PRESETS` (hand-edited)
+  - `revb.js` — `REVB`: Rev-B daily baseline + actuals and milestone table per shaft. **Generated** by `scripts/import-revb.mjs` from the Rev-B tracking workbook; never hand-edit.
+- **`src/engine/projection.js`** — all pure compute functions: `computeProjection`, `computeTimelineProjection`, `computeTimelineFormations`, `buildPlannedCurve`, `buildProjectedCurve`, `buildPlannedTimeline`, `generateQuarters`, curve helpers (`depthAtTime`, `dateAtDepth`), plus date helpers (`addDays`, `daysBetween`, `fmtDate`, `fmtShort`, `eom`). No React, no state.
+- **`src/engine/revb.js`** — pure Rev-B comparisons: `revbDaily`, `revbStatus`, `revbMilestones` (slip per milestone + forecasts), `revbMonthly`.
+- **`scripts/import-revb.mjs`** — `npm run import:revb -- <workbook.xlsx>`; reads sheets `VS7 Rev-B`, `VS8 Rev-B`, `Rev-B Tables`, locating columns by header text.
 - **`src/components/`** — presentation only. State lives in `App.jsx` and is passed down.
 - **`src/App.jsx`** — composition, state ownership, memoised derived values. Assembles `SHAFTS = { VS7: {...VS7, actual: VS7_ACTUAL}, VS8: {...VS8, actual: VS8_ACTUAL} }`.
 
-## Monthly update flow
+## Update flow
 
-1. Append one row per shaft in `src/data/progression.js`.
-2. If a formation boundary was crossed, add `aStart`/`aFin` to the relevant formation in `src/data/shafts.js`.
-3. Done — no other files touched.
+1. Re-import the Rev-B workbook: `npm run import:revb -- <path>`.
+2. Append one EOM row per shaft in `src/data/progression.js`, and/or update the month-to-date row to the workbook's latest actual.
+3. If a formation boundary was crossed, add `aStart`/`aFin` to the relevant formation in `src/data/shafts.js`.
+4. Done — no other files touched.
 
 ## Conventions
 
@@ -24,10 +28,13 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 - `eom(y, m)` = end of month, i.e. `new Date(y, m+1, 0)`.
 - `today` in `App.jsx` is the latest reporting date across both shafts' progression data, so it advances automatically when a new EOM row is added.
 - Lithology colour palette and `DARK_CODES` (for white-on-dark text) live in `data/shafts.js` because they're geological metadata.
+- Rev-B slippage is per milestone (actual/forecast date − Rev-B date). The workbook's "Cumulative Slippage" column sums those and double counts; don't reproduce it.
+- Rev-B monthly figures come from the daily sheets, not the workbook's hand-entered monthly table (which drifts up to ~3m, and had VS7/VS8 Jul–Aug 2026 actual advances crossed).
+- VS8's app final depth is 548.1m; the Rev-B daily sheet runs to 561m and is plotted as supplied.
 - The `LOWER` rate group covers Bulli Seam and everything below in VS7. VS8 terminates within Coalcliff SS so its `LOWER` slider is auto-hidden by `RatesPanel`.
 
 ## What NOT to do
 
-- Don't add per-component data stores. Data is hand-edited monthly; centralising it in `src/data/` is intentional.
+- Don't add per-component data stores. Data is hand-edited or imported; centralising it in `src/data/` is intentional.
 - Don't move projection logic into components. Keep `engine/projection.js` pure.
 - Don't reorder `formations` arrays — `from`/`to` must be contiguous and ascending.

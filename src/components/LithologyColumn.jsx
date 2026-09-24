@@ -1,15 +1,16 @@
 import { LITHO_COLORS, DARK_CODES } from "../data/shafts.js";
-
-const COL_HEIGHT = 500;
+import useElementHeight from "./useElementHeight.js";
 
 export default function LithologyColumn({
   shaft, activeShaft, curDepth, depthOverrides, setDepthOverrides,
   handleDepthChange, hoveredFm, setHoveredFm,
 }) {
-  const px = COL_HEIGHT / shaft.finalDepth;
+  // The column stretches to the available height; 2px allows for its border.
+  const [colRef, colH] = useElementHeight();
+  const px = Math.max(0, colH - 2) / shaft.finalDepth;
 
   return (
-    <div style={{ width: 160, flexShrink: 0, background: "#fff", borderRight: "1px solid #ddd", padding: "10px 6px" }}>
+    <div style={{ width: 160, flexShrink: 0, background: "#fff", borderRight: "1px solid #ddd", padding: "10px 6px", display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ fontSize: 9, fontWeight: 700, color: "#163D4C", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>Lithology</div>
 
       <div style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
@@ -28,8 +29,8 @@ export default function LithologyColumn({
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 0 }}>
-        <div style={{ width: 28, flexShrink: 0, position: "relative", height: COL_HEIGHT }}>
+      <div ref={colRef} style={{ display: "flex", gap: 0, flex: 1, minHeight: 240 }}>
+        <div style={{ width: 28, flexShrink: 0, position: "relative", height: "100%" }}>
           {[0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, Math.round(shaft.finalDepth)]
             .filter(d => d <= shaft.finalDepth)
             .map(d => (
@@ -44,7 +45,7 @@ export default function LithologyColumn({
           }}>{curDepth.toFixed(0)}</div>
         </div>
 
-        <div style={{ flex: 1, position: "relative", height: COL_HEIGHT, border: "1px solid #888", borderRadius: 2, overflow: "hidden" }}>
+        <div style={{ flex: 1, position: "relative", height: "100%", boxSizing: "border-box", border: "1px solid #888", borderRadius: 2, overflow: "hidden" }}>
           {shaft.formations.map((fm, i) => {
             const top = fm.from * px;
             const h = (fm.to - fm.from) * px;

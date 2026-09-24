@@ -12,7 +12,7 @@ export default function SCurve({
   ];
 
   return (
-    <div>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 12, marginBottom: 8, alignItems: "center", flexWrap: "wrap" }}>
         {legend.map((leg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -23,29 +23,31 @@ export default function SCurve({
         <div style={{ fontSize: 8, color: "#aaa", marginLeft: "auto" }}>PTD: {ptdRate} m/d over {ptdDays}d</div>
       </div>
 
-      <ResponsiveContainer width="100%" height={380}>
-        <LineChart data={scurveData} margin={{ top: 8, right: 20, left: 5, bottom: 20 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-          <XAxis dataKey="time" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={v => fmtShort(new Date(v))} tick={{ fontSize: 8 }} />
-          <YAxis reversed domain={[0, shaft.finalDepth]} tick={{ fontSize: 8 }} label={{ value: "Depth (m)", angle: -90, position: "insideLeft", fontSize: 8, fill: "#888" }} />
-          <Tooltip
-            labelFormatter={v => fmtDate(new Date(v))}
-            formatter={(v, n) => [v != null ? `${v.toFixed(1)}m` : "—", n === "planned" ? "Planned" : n === "actual" ? "Actual" : "Projected"]}
-            contentStyle={{ fontSize: 10, borderRadius: 4 }}
-          />
-          <ReferenceLine x={today.getTime()} stroke="#E60033" strokeDasharray="4 4" strokeWidth={1} label={{ value: "Today", position: "top", fontSize: 7, fill: "#E60033" }} />
-          <ReferenceLine y={curDepth} stroke="#E60033" strokeDasharray="2 3" strokeWidth={0.6} />
-          {shaft.standOff && (
-            <ReferenceLine y={shaft.standOff} stroke="#F5B216" strokeDasharray="4 2" strokeWidth={1} label={{ value: "Stand-off", position: "right", fontSize: 7, fill: "#F5B216" }} />
-          )}
-          {shaft.formations.filter(f => f.to < shaft.finalDepth && f.to > shaft.preSink).map(f => (
-            <ReferenceLine key={f.code} y={f.to} stroke="#eee" strokeWidth={0.5} />
-          ))}
-          <Line type="monotone" dataKey="planned" stroke="#163D4C" strokeWidth={2} dot={false} connectNulls />
-          <Line type="monotone" dataKey="actual" stroke="#E60033" strokeWidth={2.5} dot={{ r: 2, fill: "#E60033" }} connectNulls />
-          <Line type="monotone" dataKey="projected" stroke="#E60033" strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
-        </LineChart>
-      </ResponsiveContainer>
+      <div style={{ flex: 1, minHeight: 300 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={scurveData} margin={{ top: 18, right: 48, left: 5, bottom: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+            <XAxis dataKey="time" type="number" scale="time" domain={["dataMin", "dataMax"]} tickFormatter={v => fmtShort(new Date(v))} tick={{ fontSize: 8 }} />
+            <YAxis reversed domain={[0, shaft.finalDepth]} tick={{ fontSize: 8 }} label={{ value: "Depth (m)", angle: -90, position: "insideLeft", fontSize: 8, fill: "#888" }} />
+            <Tooltip
+              labelFormatter={v => fmtDate(new Date(v))}
+              formatter={(v, n) => [v != null ? `${v.toFixed(1)}m` : "—", n === "planned" ? "Planned" : n === "actual" ? "Actual" : "Projected"]}
+              contentStyle={{ fontSize: 10, borderRadius: 4 }}
+            />
+            <ReferenceLine x={today.getTime()} stroke="#E60033" strokeDasharray="4 4" strokeWidth={1} label={{ value: "Today", position: "top", fontSize: 7, fill: "#E60033" }} />
+            <ReferenceLine y={curDepth} stroke="#E60033" strokeDasharray="2 3" strokeWidth={0.6} />
+            {shaft.standOff && (
+              <ReferenceLine y={shaft.standOff} stroke="#F5B216" strokeDasharray="4 2" strokeWidth={1} label={{ value: "Stand-off", position: "right", fontSize: 7, fill: "#F5B216" }} />
+            )}
+            {shaft.formations.filter(f => f.to < shaft.finalDepth && f.to > shaft.preSink).map(f => (
+              <ReferenceLine key={f.code} y={f.to} stroke="#eee" strokeWidth={0.5} />
+            ))}
+            <Line type="monotone" dataKey="planned" stroke="#163D4C" strokeWidth={2} dot={false} connectNulls />
+            <Line type="monotone" dataKey="actual" stroke="#E60033" strokeWidth={2.5} dot={{ r: 2, fill: "#E60033" }} connectNulls />
+            <Line type="monotone" dataKey="projected" stroke="#E60033" strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
       <div style={{
         marginTop: 6, padding: "6px 10px", borderRadius: 4,

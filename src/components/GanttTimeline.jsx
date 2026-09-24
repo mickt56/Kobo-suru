@@ -22,7 +22,7 @@ export default function GanttTimeline({
   }
 
   return (
-    <div>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
         {[{ f: "#163D4C", o: 0.2, l: "Planned" }, { f: "litho", o: 1, l: rateMode === "timeline" ? "Projected (timeline)" : "Projected (geology)" }].map((leg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -36,7 +36,7 @@ export default function GanttTimeline({
         </div>
       </div>
 
-      <div style={{ overflowX: "auto" }}>
+      <div style={{ overflowX: "auto", flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
         <div style={{ position: "relative", marginLeft: 140, height: 16, marginBottom: 1 }}>
           {ticks.map((t, i) => (
             <div key={i} style={{
@@ -58,7 +58,7 @@ export default function GanttTimeline({
           return (
             <div
               key={i}
-              style={{ display: "flex", alignItems: "center", height: 18, marginBottom: 1 }}
+              style={{ display: "flex", alignItems: "center", flex: "1 1 18px", minHeight: 18, maxHeight: 44, marginBottom: 1 }}
               onMouseEnter={() => setHoveredFm(fm.code)}
               onMouseLeave={() => setHoveredFm(null)}
             >
@@ -71,15 +71,15 @@ export default function GanttTimeline({
               </div>
               <div style={{ flex: 1, position: "relative", height: "100%", background: i % 2 === 0 ? "#fafafa" : "#fff" }}>
                 <div style={{ position: "absolute", left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: "#E60033", zIndex: 5, opacity: 0.4 }} />
-                <div style={{ position: "absolute", left: `${ps}%`, width: `${pw}%`, top: 2, height: 6, background: "#163D4C", opacity: 0.12, borderRadius: 2 }} />
+                <div style={{ position: "absolute", left: `${ps}%`, width: `${pw}%`, top: "calc(50% - 7px)", height: 6, background: "#163D4C", opacity: 0.12, borderRadius: 2 }} />
                 {(isC || isA) && (
-                  <svg style={{ position: "absolute", left: `${ps}%`, width: `${isC ? pw : Math.max(0, todayPct - ps)}%`, top: 2, height: 6, borderRadius: 2, overflow: "hidden" }}>
+                  <svg style={{ position: "absolute", left: `${ps}%`, width: `${isC ? pw : Math.max(0, todayPct - ps)}%`, top: "calc(50% - 7px)", height: 6, borderRadius: 2, overflow: "hidden" }}>
                     <rect width="100%" height="100%" fill="url(#mHd)" rx="2" />
                   </svg>
                 )}
                 {hp && !isC && (
                   <div style={{
-                    position: "absolute", left: `${prs}%`, width: `${prw}%`, top: 9, height: 6,
+                    position: "absolute", left: `${prs}%`, width: `${prw}%`, top: "calc(50% + 1px)", height: 6,
                     background: LITHO_COLORS[fm.code], borderRadius: 2, border: "1px solid rgba(0,0,0,0.1)",
                     boxShadow: isA ? "0 0 0 1px #E60033" : "none",
                   }}>

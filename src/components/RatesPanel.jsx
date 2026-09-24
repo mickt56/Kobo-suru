@@ -1,15 +1,14 @@
 import { RATE_GROUPS, LOWER_CODES, PRESETS } from "../data/rates.js";
 import {
-  daysBetween, fmtDate, getFormationAt, getRateKey, typeColor,
+  daysBetween, getFormationAt, getRateKey, typeColor,
 } from "../engine/projection.js";
 
 export default function RatesPanel({
-  shaft, activeShaft, otherKey, today, curDepth,
+  shaft, activeShaft, today, curDepth,
   rateMode, setRateMode,
   rates, setRates, handleRate,
   timelineRates, handleTimelineRate,
   setHoveredFm,
-  otherProj, SHAFTS,
 }) {
   return (
     <div style={{ width: 250, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #ddd", padding: "10px 10px", overflowY: "auto" }}>
@@ -127,18 +126,6 @@ export default function RatesPanel({
           </div>
         </>
       )}
-
-      <div style={{ marginTop: 8, borderTop: "1px solid #e0e0e0", paddingTop: 6 }}>
-        <div style={{ fontSize: 8, color: "#888", marginBottom: 2, textTransform: "uppercase" }}>{otherKey}</div>
-        <div style={{ fontSize: 10, color: "#333", lineHeight: 1.5 }}>
-          Depth: <b>{SHAFTS[otherKey].actual[SHAFTS[otherKey].actual.length - 1].depth.toFixed(1)}m</b> / {SHAFTS[otherKey].finalDepth}m<br />
-          PTD: <b>{(
-            (SHAFTS[otherKey].actual[SHAFTS[otherKey].actual.length - 1].depth - SHAFTS[otherKey].preSink) /
-            daysBetween(SHAFTS[otherKey].mainSinkStart, today)
-          ).toFixed(3)} m/d</b><br />
-          {rateMode === "geology" && <>End: <b>{fmtDate(otherProj.completionDate)}</b></>}
-        </div>
-      </div>
     </div>
   );
 }

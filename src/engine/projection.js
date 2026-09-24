@@ -72,20 +72,36 @@ export function computeTimelineProjection(shaft, quarters, curDepth, today) {
   return points;
 }
 
+// Depth on a curve [{date: ms, depth}] at time t, by linear interpolation; null outside the curve.
+export function depthAtTime(points, t) {
+  if (!points.length || t < points[0].date || t > points[points.length - 1].date) return null;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i], b = points[i + 1];
+    if (t >= a.date && t <= b.date) {
+      return b.date === a.date ? b.depth : a.depth + (t - a.date) / (b.date - a.date) * (b.depth - a.depth);
+    }
+  }
+  return points[points.length - 1].depth;
+}
+
+// Time (ms) at which a depth curve [{date: ms, depth}] (depth ascending) reaches `depth`,
+// by linear interpolation; null if the curve never gets there.
+export function dateAtDepth(points, depth) {
+  const EPS = 1e-6;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i], b = points[i + 1];
+    if (depth >= a.depth - EPS && depth <= b.depth + EPS) {
+      if (b.depth === a.depth) return a.date;
+      return a.date + (Math.min(depth, b.depth) - a.depth) / (b.depth - a.depth) * (b.date - a.date);
+    }
+  }
+  return null;
+}
+
 // Formation entry/exit dates read off a timeline depth curve (from computeTimelineProjection).
 // Same row shape as computeProjection; formations beyond the last quarter get no dates.
 export function computeTimelineFormations(shaft, points, curDepth) {
-  const EPS = 1e-6;
-  const timeAt = depth => {
-    for (let i = 0; i < points.length - 1; i++) {
-      const a = points[i], b = points[i + 1];
-      if (depth >= a.depth - EPS && depth <= b.depth + EPS) {
-        if (b.depth === a.depth) return a.date;
-        return a.date + (Math.min(depth, b.depth) - a.depth) / (b.depth - a.depth) * (b.date - a.date);
-      }
-    }
-    return null;
-  };
+  const timeAt = depth => dateAtDepth(points, depth);
   const formations = shaft.formations.map(fm => {
     const thick = fm.to - fm.from;
     if (fm.to <= curDepth) {

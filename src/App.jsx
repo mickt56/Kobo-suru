@@ -2,11 +2,13 @@ import { useState, useMemo, useCallback } from "react";
 import { VS7, VS8 } from "./data/shafts.js";
 import { VS7_ACTUAL, VS8_ACTUAL } from "./data/progression.js";
 import { RATE_GROUPS } from "./data/rates.js";
+import { REVB } from "./data/revb.js";
 import {
   computeProjection, computeTimelineProjection, computeTimelineFormations,
   buildPlannedCurve, buildProjectedCurve, buildPlannedTimeline,
-  generateQuarters, daysBetween, MS_DAY,
+  generateQuarters, daysBetween, depthAtTime, MS_DAY,
 } from "./engine/projection.js";
+import { revbDaily, revbStatus, revbMilestones, revbMonthly } from "./engine/revb.js";
 
 import PatternDefs from "./components/PatternDefs.jsx";
 import KPIBar from "./components/KPIBar.jsx";
@@ -15,11 +17,19 @@ import RatesPanel from "./components/RatesPanel.jsx";
 import ScheduleTable from "./components/ScheduleTable.jsx";
 import SCurve from "./components/SCurve.jsx";
 import GanttTimeline from "./components/GanttTimeline.jsx";
+import RevBView from "./components/RevBView.jsx";
 
 const SHAFTS = {
   VS7: { ...VS7, actual: VS7_ACTUAL },
   VS8: { ...VS8, actual: VS8_ACTUAL },
 };
+
+const TABS = [
+  { id: "schedule", l: "Schedule" },
+  { id: "scurve", l: "S-Curve" },
+  { id: "gantt", l: "Gantt" },
+  { id: "revb", l: "Rev-B" },
+];
 
 export default function App() {
   const [activeShaft, setActiveShaft] = useState("VS7");
@@ -39,7 +49,6 @@ export default function App() {
     [],
   );
   const shaft = SHAFTS[activeShaft];
-  const otherKey = activeShaft === "VS7" ? "VS8" : "VS7";
   const defaultDepth = shaft.actual[shaft.actual.length - 1].depth;
   const curDepth = depthOverrides[activeShaft] ?? defaultDepth;
 
@@ -62,14 +71,6 @@ export default function App() {
     () => computeProjection(shaft, rates, curDepth, today),
     [shaft, rates, curDepth, today],
   );
-  const otherProj = useMemo(
-    () => computeProjection(
-      SHAFTS[otherKey], rates,
-      SHAFTS[otherKey].actual[SHAFTS[otherKey].actual.length - 1].depth,
-      today,
-    ),
-    [otherKey, rates, today],
-  );
 
   const totalRemaining = shaft.finalDepth - curDepth;
   const pctComplete = ((curDepth / shaft.finalDepth) * 100).toFixed(1);
@@ -79,6 +80,12 @@ export default function App() {
       ? computeTimelineProjection(shaft, timelineRates[activeShaft], curDepth, today)
       : null,
     [rateMode, shaft, timelineRates, activeShaft, curDepth, today],
+  );
+
+  // Projected depth curve for the active rate mode.
+  const projPts = useMemo(
+    () => timelinePts ?? buildProjectedCurve(shaft, rates, curDepth, today),
+    [timelinePts, shaft, rates, curDepth, today],
   );
 
   const projDays = rateMode === "geology"
@@ -107,38 +114,43 @@ export default function App() {
   const scurveData = useMemo(() => {
     const actualPts = shaft.actual.map(a => ({ date: a.date.getTime(), depth: a.depth }));
     const planned = buildPlannedCurve(shaft, rates);
-    const projPts = rateMode === "geology"
-      ? buildProjectedCurve(shaft, rates, curDepth, today)
-      : computeTimelineProjection(shaft, timelineRates[activeShaft], curDepth, today);
-
     const all = new Set();
     [actualPts, planned, projPts].forEach(a => a.forEach(p => all.add(p.date)));
-    const sorted = [...all].sort((a, b) => a - b);
-
-    const interp = (arr, t) => {
-      if (t < arr[0].date || t > arr[arr.length - 1].date) return null;
-      for (let i = 0; i < arr.length - 1; i++) {
-        if (t >= arr[i].date && t <= arr[i + 1].date) {
-          const f = (t - arr[i].date) / (arr[i + 1].date - arr[i].date);
-          return arr[i].depth + f * (arr[i + 1].depth - arr[i].depth);
-        }
-      }
-      return arr[arr.length - 1].depth;
-    };
-
-    return sorted.map(t => ({
+    return [...all].sort((a, b) => a - b).map(t => ({
       time: t,
-      planned: interp(planned, t),
-      actual: interp(actualPts, t),
-      projected: interp(projPts, t),
+      planned: depthAtTime(planned, t),
+      actual: depthAtTime(actualPts, t),
+      projected: depthAtTime(projPts, t),
     }));
-  }, [shaft, rates, curDepth, today, rateMode, timelineRates, activeShaft]);
+  }, [shaft, rates, projPts]);
 
   const ganttPlanned = useMemo(() => buildPlannedTimeline(shaft, rates), [shaft, rates]);
   const ganttProjection = useMemo(
     () => timelinePts ? computeTimelineFormations(shaft, timelinePts, curDepth) : projection,
     [timelinePts, shaft, curDepth, projection],
   );
+
+  // Rev-B baseline comparison. Status uses the workbook's own daily actuals; forecasts use projPts.
+  const revb = REVB[activeShaft];
+  const revbRows = useMemo(() => revbDaily(revb), [revb]);
+  const revbSt = useMemo(() => revbStatus(revb, revbRows), [revb, revbRows]);
+  const revbMs = useMemo(
+    () => revbMilestones(revb, revbRows, projPts, revbSt.actual, revbSt.asOf),
+    [revb, revbRows, projPts, revbSt],
+  );
+  const revbMonths = useMemo(() => revbMonthly(revbRows, revbSt.asOf), [revbRows, revbSt]);
+  const revbChartData = useMemo(() => {
+    const revbPts = revbRows.map(d => ({ date: d.date, depth: d.revb }));
+    const actualPts = revbRows.filter(d => d.actual != null).map(d => ({ date: d.date, depth: d.actual }));
+    const all = new Set(revbRows.map(d => d.date));
+    projPts.forEach(p => all.add(p.date));
+    return [...all].sort((a, b) => a - b).map(t => ({
+      time: t,
+      revb: depthAtTime(revbPts, t),
+      actual: depthAtTime(actualPts, t),
+      projected: depthAtTime(projPts, t),
+    }));
+  }, [revbRows, projPts]);
 
   const handleRate = useCallback((id, val) => {
     const v = parseFloat(val);
@@ -167,7 +179,7 @@ export default function App() {
   const variance = curDepth - plannedAtToday;
 
   return (
-    <div style={{ fontFamily: "Arial,sans-serif", background: "#f3f3f3", minHeight: "100vh" }}>
+    <div style={{ fontFamily: "Arial,sans-serif", background: "#f3f3f3", height: "100vh", minHeight: 640, display: "flex", flexDirection: "column" }}>
       <PatternDefs />
 
       <KPIBar
@@ -180,9 +192,10 @@ export default function App() {
         weightedRate={weightedRate}
         projDays={projDays}
         projEnd={projEnd}
+        revbStatus={revbSt}
       />
 
-      <div style={{ display: "flex" }}>
+      <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
         <LithologyColumn
           shaft={shaft}
           activeShaft={activeShaft}
@@ -197,7 +210,6 @@ export default function App() {
         <RatesPanel
           shaft={shaft}
           activeShaft={activeShaft}
-          otherKey={otherKey}
           today={today}
           curDepth={curDepth}
           rateMode={rateMode}
@@ -208,13 +220,11 @@ export default function App() {
           timelineRates={timelineRates}
           handleTimelineRate={handleTimelineRate}
           setHoveredFm={setHoveredFm}
-          otherProj={otherProj}
-          SHAFTS={SHAFTS}
         />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
           <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #163D4C", background: "#fff" }}>
-            {[{ id: "schedule", l: "Schedule" }, { id: "scurve", l: "S-Curve" }, { id: "gantt", l: "Gantt" }].map(t => (
+            {TABS.map(t => (
               <button
                 key={t.id}
                 onClick={() => setRightTab(t.id)}
@@ -227,7 +237,7 @@ export default function App() {
               >{t.l}</button>
             ))}
           </div>
-          <div style={{ flex: 1, overflow: "auto", padding: "10px 12px", background: "#fff" }}>
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "10px 12px", background: "#fff", display: "flex", flexDirection: "column" }}>
             {rightTab === "schedule" && (
               <ScheduleTable
                 shaft={shaft}
@@ -264,6 +274,16 @@ export default function App() {
                 projDays={projDays}
                 ptdDays={ptdDays}
                 setHoveredFm={setHoveredFm}
+              />
+            )}
+            {rightTab === "revb" && (
+              <RevBView
+                shaft={shaft}
+                rateMode={rateMode}
+                status={revbSt}
+                milestones={revbMs}
+                monthly={revbMonths}
+                chartData={revbChartData}
               />
             )}
           </div>
