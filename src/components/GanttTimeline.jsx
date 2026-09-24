@@ -2,7 +2,7 @@ import { LITHO_COLORS, DARK_CODES } from "../data/shafts.js";
 import { MS_DAY, daysBetween, fmtDate, fmtShort } from "../engine/projection.js";
 
 export default function GanttTimeline({
-  shaft, ganttPlanned, projection, today, projEnd, projDays, ptdDays, setHoveredFm,
+  shaft, ganttPlanned, projection, rateMode, today, projEnd, projDays, ptdDays, setHoveredFm,
 }) {
   const ganttStart = shaft.mainSinkStart;
   const ends = [
@@ -24,7 +24,7 @@ export default function GanttTimeline({
   return (
     <div>
       <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
-        {[{ f: "#163D4C", o: 0.2, l: "Planned" }, { f: "litho", o: 1, l: "Projected" }].map((leg, i) => (
+        {[{ f: "#163D4C", o: 0.2, l: "Planned" }, { f: "litho", o: 1, l: rateMode === "timeline" ? "Projected (timeline)" : "Projected (geology)" }].map((leg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
             <div style={{ width: 12, height: 6, background: leg.f === "litho" ? "#AACFE8" : leg.f, opacity: leg.o, borderRadius: 2, border: "1px solid rgba(0,0,0,0.1)" }} />
             <span style={{ fontSize: 8, color: "#666" }}>{leg.l}</span>
@@ -54,7 +54,7 @@ export default function GanttTimeline({
           const isA = pf?.status === "active";
           const hp = pf?.entryDate && pf?.exitDate;
           const prs = hp ? (daysBetween(ganttStart, pf.entryDate) / ganttTotalDays) * 100 : 0;
-          const prw = hp ? (pf.days / ganttTotalDays) * 100 : 0;
+          const prw = hp ? (daysBetween(pf.entryDate, pf.exitDate) / ganttTotalDays) * 100 : 0;
           return (
             <div
               key={i}
@@ -106,7 +106,7 @@ export default function GanttTimeline({
       <div style={{ marginTop: 10, padding: "6px 10px", background: "#f8f8f8", borderRadius: 4, border: "1px solid #e0e0e0", fontSize: 9, display: "flex", gap: 16, flexWrap: "wrap" }}>
         <div><span style={{ color: "#888" }}>Start:</span> <b>{fmtDate(shaft.mainSinkStart)}</b></div>
         <div><span style={{ color: "#888" }}>Elapsed:</span> <b>{ptdDays}d</b></div>
-        <div><span style={{ color: "#888" }}>Remaining:</span> <b style={{ color: "#E60033" }}>{projDays}d</b></div>
+        <div><span style={{ color: "#888" }}>Remaining:</span> <b style={{ color: "#E60033" }}>{typeof projDays === "number" ? `${projDays}d` : projDays}</b></div>
         <div><span style={{ color: "#888" }}>End:</span> <b style={{ color: "#163D4C" }}>{projEnd ? fmtDate(projEnd) : "—"}</b></div>
       </div>
     </div>

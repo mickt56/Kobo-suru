@@ -72,6 +72,44 @@ export function computeTimelineProjection(shaft, quarters, curDepth, today) {
   return points;
 }
 
+// Formation entry/exit dates read off a timeline depth curve (from computeTimelineProjection).
+// Same row shape as computeProjection; formations beyond the last quarter get no dates.
+export function computeTimelineFormations(shaft, points, curDepth) {
+  const EPS = 1e-6;
+  const timeAt = depth => {
+    for (let i = 0; i < points.length - 1; i++) {
+      const a = points[i], b = points[i + 1];
+      if (depth >= a.depth - EPS && depth <= b.depth + EPS) {
+        if (b.depth === a.depth) return a.date;
+        return a.date + (Math.min(depth, b.depth) - a.depth) / (b.depth - a.depth) * (b.date - a.date);
+      }
+    }
+    return null;
+  };
+  const formations = shaft.formations.map(fm => {
+    const thick = fm.to - fm.from;
+    if (fm.to <= curDepth) {
+      return { ...fm, thickness: thick, remaining: 0, days: 0, rate: 0, entryDate: null, exitDate: null, status: "complete" };
+    }
+    const isActive = fm.from < curDepth;
+    const rem = isActive ? fm.to - curDepth : thick;
+    const start = isActive ? points[0].date : timeAt(fm.from);
+    const end = timeAt(fm.to);
+    const days = start != null && end != null ? (end - start) / MS_DAY : 0;
+    return {
+      ...fm,
+      thickness: thick,
+      remaining: Math.round(rem * 10) / 10,
+      days: Math.round(days * 10) / 10,
+      rate: days > 0 ? rem / days : 0,
+      entryDate: start == null ? null : isActive && fm.aStart ? fm.aStart : new Date(start),
+      exitDate: end == null ? null : new Date(end),
+      status: isActive ? "active" : "pending",
+    };
+  });
+  return { formations };
+}
+
 export function buildPlannedCurve(shaft, rates) {
   const pts = [{ date: shaft.mainSinkStart.getTime(), depth: shaft.preSink }];
   let cum = 0;

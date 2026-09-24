@@ -3,7 +3,7 @@ import { VS7, VS8 } from "./data/shafts.js";
 import { VS7_ACTUAL, VS8_ACTUAL } from "./data/progression.js";
 import { RATE_GROUPS } from "./data/rates.js";
 import {
-  computeProjection, computeTimelineProjection,
+  computeProjection, computeTimelineProjection, computeTimelineFormations,
   buildPlannedCurve, buildProjectedCurve, buildPlannedTimeline,
   generateQuarters, daysBetween, MS_DAY,
 } from "./engine/projection.js";
@@ -135,6 +135,10 @@ export default function App() {
   }, [shaft, rates, curDepth, today, rateMode, timelineRates, activeShaft]);
 
   const ganttPlanned = useMemo(() => buildPlannedTimeline(shaft, rates), [shaft, rates]);
+  const ganttProjection = useMemo(
+    () => timelinePts ? computeTimelineFormations(shaft, timelinePts, curDepth) : projection,
+    [timelinePts, shaft, curDepth, projection],
+  );
 
   const handleRate = useCallback((id, val) => {
     const v = parseFloat(val);
@@ -253,7 +257,8 @@ export default function App() {
               <GanttTimeline
                 shaft={shaft}
                 ganttPlanned={ganttPlanned}
-                projection={projection}
+                projection={ganttProjection}
+                rateMode={rateMode}
                 today={today}
                 projEnd={projEnd}
                 projDays={projDays}
