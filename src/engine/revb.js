@@ -35,15 +35,30 @@ export function revbStatus(revb, daily) {
 // Open milestones get a forecast: sinking stages from the projected depth curve, events chained
 // on from the previous milestone by their Rev-B duration (which also delays later sinking stages,
 // since the projection itself has no stoppages). Slip = (actual or forecast) - Rev-B, in days.
+//
+// Sinking stages also get a rate reconciliation: actual days from reaching the stage's start depth
+// to reaching its end depth (or to the as-of date while in progress), and the actual rate as depth
+// change over those days, against the Rev-B rate.
 export function revbMilestones(revb, daily, projPoints, actualDepth, asOf) {
-  const reachDate = depth => {
-    const d = daily.find(r => r.actual != null && r.actual >= depth - 1e-9);
-    return d ? new Date(d.date) : null;
-  };
+  const readings = daily.filter(r => r.actual != null);
+  const reach = depth => readings.find(r => r.actual >= depth - 1e-9) ?? null;
   const rows = revb.milestones.map(m => {
     const sink = !!m.metres;
     const recorded = m.actual ? parseISODate(m.actual) : null;
-    return { ...m, sink, revBDate: parseISODate(m.revB), actualDate: sink ? reachDate(m.to) ?? recorded : recorded, forecastDate: null };
+    const end = sink ? reach(m.to) : null;
+    const row = { ...m, sink, revBDate: parseISODate(m.revB), actualDate: sink ? (end ? new Date(end.date) : recorded) : recorded, forecastDate: null };
+    const start = sink ? reach(m.from) : null;
+    if (start) {
+      const stop = end ?? readings.at(-1);
+      const days = daysBetween(new Date(start.date), new Date(stop.date));
+      if (days > 0) {
+        row.actualDays = days;
+        row.actualRate = (stop.actual - start.actual) / days;
+        row.achieved = m.rate ? row.actualRate / m.rate : null;
+        row.rateToDate = !end; // still sinking this stage
+      }
+    }
+    return row;
   });
   const lastDoneSink = rows.findLastIndex(r => r.sink && r.actualDate);
   let prev = null;

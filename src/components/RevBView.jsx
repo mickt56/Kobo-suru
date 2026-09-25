@@ -18,6 +18,14 @@ function Stat({ label, value, sub, color = NAVY }) {
   );
 }
 
+// Share of the Rev-B rate achieved: green at or above plan, amber within 20%, red below.
+const achievedColor = a => (a == null ? "#aaa" : a >= 1 ? GREEN : a >= 0.8 ? "#e65100" : RED);
+const implication = m => {
+  if (m.achieved == null) return undefined;
+  if (m.achieved >= 1) return `Actual ${m.achieved.toFixed(1)}× the Rev-B rate`;
+  return `Rev-B rate ${(1 / m.achieved).toFixed(1)}× the actual rate`;
+};
+
 function StatusCell({ m }) {
   if (m.status === "done") return <span style={{ fontSize: 7, color: "#888" }}>✓ Done</span>;
   if (m.status === "unrecorded") return <span style={{ fontSize: 7, color: "#aaa" }} title="Passed, but no actual date in the Rev-B workbook">No date</span>;
@@ -104,7 +112,7 @@ export default function RevBView({ shaft, modeLabel, status, milestones, monthly
       </div>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-start" }}>
-        <div style={{ flex: "3 1 560px", minWidth: 0, overflowX: "auto" }}>
+        <div style={{ flex: "3 1 820px", minWidth: 0, overflowX: "auto" }}>
           <div style={{ fontSize: 8, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 }}>Rev-B milestones</div>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
             <thead>
@@ -114,7 +122,11 @@ export default function RevBView({ shaft, modeLabel, status, milestones, monthly
                 <th style={th}>Rev-B</th>
                 <th style={th}>Actual / forecast</th>
                 <th style={{ ...th, textAlign: "right" }}>Slip (d)</th>
-                <th style={th}>Status</th>
+                <th style={{ ...th, textAlign: "right", borderLeft: "1px solid rgba(255,255,255,0.25)" }}>Rev-B m/d</th>
+                <th style={{ ...th, textAlign: "right" }}>Actual m/d</th>
+                <th style={{ ...th, textAlign: "right" }}>% of Rev-B</th>
+                <th style={{ ...th, textAlign: "right" }}>Days Rev-B / act.</th>
+                <th style={{ ...th, borderLeft: "1px solid rgba(255,255,255,0.25)" }}>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -123,7 +135,7 @@ export default function RevBView({ shaft, modeLabel, status, milestones, monthly
                 const when = fcst(m);
                 return (
                   <tr key={i} style={{ background: m.status === "active" ? "#FFF8E8" : i % 2 === 0 ? "#fff" : "#fafafa", borderBottom: "1px solid #eee", color: done || m.status === "unrecorded" ? "#888" : "#222" }}>
-                    <td style={{ ...td, maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }} title={m.name}>{m.name}</td>
+                    <td style={{ ...td, maxWidth: 225, overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }} title={m.name}>{m.name}</td>
                     <td style={num}>{m.sink ? `${m.from}–${m.to}` : `@ ${m.to}`}</td>
                     <td style={td}>{fmtDate(m.revBDate)}</td>
                     <td style={{ ...td, fontStyle: done ? "normal" : "italic" }}>
@@ -133,7 +145,18 @@ export default function RevBView({ shaft, modeLabel, status, milestones, monthly
                     <td style={{ ...num, fontWeight: 700, color: m.slip == null ? "#aaa" : slipColor(m.slip), opacity: done ? 1 : 0.75 }}>
                       {m.slip == null ? "—" : signed(m.slip, 0)}
                     </td>
-                    <td style={td}><StatusCell m={m} /></td>
+                    <td style={{ ...num, borderLeft: "1px solid #eee" }}>{m.rate ? m.rate.toFixed(2) : ""}</td>
+                    <td style={{ ...num, fontStyle: m.rateToDate ? "italic" : "normal" }} title={m.rateToDate ? "Rate so far in this stage" : undefined}>
+                      {m.actualRate != null ? m.actualRate.toFixed(2) : ""}
+                    </td>
+                    <td style={{ ...num, fontWeight: 700, color: achievedColor(m.achieved) }} title={implication(m)}>
+                      {m.achieved != null ? `${Math.round(m.achieved * 100)}%` : ""}
+                    </td>
+                    <td style={num} title={m.rateToDate ? "Actual days so far in this stage" : undefined}>
+                      {m.sink && m.days != null ? m.days : ""}
+                      {m.actualDays != null && <span style={{ color: "#888", fontStyle: m.rateToDate ? "italic" : "normal" }}> / {m.actualDays}</span>}
+                    </td>
+                    <td style={{ ...td, borderLeft: "1px solid #eee" }}><StatusCell m={m} /></td>
                   </tr>
                 );
               })}
@@ -141,6 +164,7 @@ export default function RevBView({ shaft, modeLabel, status, milestones, monthly
           </table>
           <div style={{ fontSize: 8, color: "#999", marginTop: 3 }}>
             Slip = actual (or forecast) date minus Rev-B date, per milestone. Positive = late.
+            Actual rate = depth change from reaching the stage's start depth to reaching its end depth (italic: stage in progress, rate and days so far).
           </div>
         </div>
 

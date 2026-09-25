@@ -76,79 +76,84 @@ export default function ScenarioView({
         />
       </div>
 
-      <div style={{ flex: "1 0 auto", minHeight: 300, display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <div style={{ flex: "3 1 520px", minWidth: 0, display: "flex", flexDirection: "column", minHeight: 300 }}>
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
-            {[
-              { c: RED, l: "Actual", dash: null, w: 2.5 },
-              { c: NAVY, l: "Rev-B", dash: null, w: 2 },
-              ...STATS.filter(s => s.id !== "p75" && s.id !== "best").map(s => ({
-                c: LINE[s.id].stroke, dash: LINE[s.id].dash, w: LINE[s.id].width,
-                l: s.id === "p25" ? "P25 / P75" : s.id === "worst" ? "Worst / best" : s.label,
-              })),
-            ].map((leg, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                <svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke={leg.c} strokeWidth={leg.w} strokeDasharray={leg.dash ?? undefined} /></svg>
-                <span style={{ fontSize: 8, color: "#666" }}>{leg.l}</span>
-              </div>
-            ))}
-            <div style={{ fontSize: 8, color: "#aaa", marginLeft: "auto" }}>
-              {WINDOWS.find(w => w.id === choice.window).label} ({win.n} months)
+      <div style={{ flex: "1 1 320px", minHeight: 300, display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 4 }}>
+          {[
+            { c: RED, l: "Actual", dash: null, w: 2.5 },
+            { c: NAVY, l: "Rev-B", dash: null, w: 2 },
+            ...STATS.filter(s => s.id !== "p75" && s.id !== "best").map(s => ({
+              c: LINE[s.id].stroke, dash: LINE[s.id].dash, w: LINE[s.id].width,
+              l: s.id === "p25" ? "P25 / P75" : s.id === "worst" ? "Worst / best" : s.label,
+            })),
+          ].map((leg, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
+              <svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke={leg.c} strokeWidth={leg.w} strokeDasharray={leg.dash ?? undefined} /></svg>
+              <span style={{ fontSize: 8, color: "#666" }}>{leg.l}</span>
             </div>
-          </div>
-          <div style={{ flex: 1, minHeight: 260 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 18, right: 56, left: 5, bottom: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                <XAxis dataKey="time" type="number" scale="time" domain={[xMin, xMax]} allowDataOverflow ticks={xTicks} tickFormatter={v => fmtShort(new Date(v))} tick={{ fontSize: 8 }} />
-                <YAxis reversed domain={[0, yMax]} tick={{ fontSize: 8 }} label={{ value: "Depth (m)", angle: -90, position: "insideLeft", fontSize: 8, fill: "#888" }} />
-                <Tooltip
-                  labelFormatter={v => fmtDate(new Date(v))}
-                  formatter={(v, n) => [v != null ? `${v.toFixed(1)}m` : "—", n === "revb" ? "Rev-B" : n === "actual" ? "Actual" : STATS.find(s => s.id === n)?.label]}
-                  contentStyle={{ fontSize: 10, borderRadius: 4 }}
-                />
-                <ReferenceLine x={today.getTime()} stroke={RED} strokeDasharray="4 4" strokeWidth={1} label={{ value: fmtDate(today), position: "top", fontSize: 7, fill: RED }} />
-                <ReferenceLine y={shaft.finalDepth} stroke="#999" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Final ${shaft.finalDepth}m`, position: "right", fontSize: 7, fill: "#888" }} />
-                <Line type="linear" dataKey="revb" stroke={NAVY} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
-                <Line type="linear" dataKey="actual" stroke={RED} strokeWidth={2.5} dot={{ r: 1.5, fill: RED }} connectNulls isAnimationActive={false} />
-                {STATS.map(s => (
-                  <Line
-                    key={s.id} type="linear" dataKey={s.id} stroke={LINE[s.id].stroke} strokeDasharray={LINE[s.id].dash ?? undefined}
-                    strokeWidth={statsActive && choice.stat === s.id ? LINE[s.id].width + 1.5 : LINE[s.id].width}
-                    dot={false} connectNulls isAnimationActive={false}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
+          ))}
+          <div style={{ fontSize: 8, color: "#aaa", marginLeft: "auto" }}>
+            {WINDOWS.find(w => w.id === choice.window).label} ({win.n} months)
           </div>
         </div>
+        <div style={{ flex: 1, minHeight: 260 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 18, right: 56, left: 5, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
+              <XAxis dataKey="time" type="number" scale="time" domain={[xMin, xMax]} allowDataOverflow ticks={xTicks} tickFormatter={v => fmtShort(new Date(v))} tick={{ fontSize: 8 }} />
+              <YAxis reversed domain={[0, yMax]} tick={{ fontSize: 8 }} label={{ value: "Depth (m)", angle: -90, position: "insideLeft", fontSize: 8, fill: "#888" }} />
+              <Tooltip
+                labelFormatter={v => fmtDate(new Date(v))}
+                formatter={(v, n) => [v != null ? `${v.toFixed(1)}m` : "—", n === "revb" ? "Rev-B" : n === "actual" ? "Actual" : STATS.find(s => s.id === n)?.label]}
+                contentStyle={{ fontSize: 10, borderRadius: 4 }}
+              />
+              <ReferenceLine x={today.getTime()} stroke={RED} strokeDasharray="4 4" strokeWidth={1} label={{ value: fmtDate(today), position: "top", fontSize: 7, fill: RED }} />
+              <ReferenceLine y={shaft.finalDepth} stroke="#999" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Final ${shaft.finalDepth}m`, position: "right", fontSize: 7, fill: "#888" }} />
+              <Line type="linear" dataKey="revb" stroke={NAVY} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
+              <Line type="linear" dataKey="actual" stroke={RED} strokeWidth={2.5} dot={{ r: 1.5, fill: RED }} connectNulls isAnimationActive={false} />
+              {STATS.map(s => (
+                <Line
+                  key={s.id} type="linear" dataKey={s.id} stroke={LINE[s.id].stroke} strokeDasharray={LINE[s.id].dash ?? undefined}
+                  strokeWidth={statsActive && choice.stat === s.id ? LINE[s.id].width + 1.5 : LINE[s.id].width}
+                  dot={false} connectNulls isAnimationActive={false}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
 
-        <div style={{ flex: "2 1 380px", minWidth: 0 }}>
-          <div style={{ fontSize: 8, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 }}>
-            Sink complete by scenario (click to apply)
-          </div>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
-            <thead>
-              <tr style={{ background: NAVY }}>
-                <th style={th}>Monthly rate</th>
-                {WINDOWS.map(w => <th key={w.id} style={th}>{w.short} <span style={{ fontWeight: 400, opacity: 0.7 }}>({stats.windows[w.id].n})</span></th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {STATS.map((s, i) => (
-                <tr key={s.id} style={{ borderBottom: "1px solid #eee", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
-                  <td style={{ padding: "3px 5px", fontWeight: 700, whiteSpace: "nowrap" }}>
-                    {s.label}{s.hint && <span style={{ fontWeight: 400, color: "#999", fontSize: 8 }}> {s.hint}</span>}
+      <div style={{ flex: "0 0 auto", overflowX: "auto" }}>
+        <div style={{ fontSize: 8, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 }}>
+          Sink complete by scenario <span style={{ fontWeight: 400, color: "#999", textTransform: "none" }}>(click a cell to apply it; the chart shows the selected window)</span>
+        </div>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10, tableLayout: "fixed" }}>
+          <thead>
+            <tr style={{ background: NAVY }}>
+              <th style={{ ...th, width: 150 }}>Window (months)</th>
+              {STATS.map(s => (
+                <th key={s.id} style={th}>{s.label}{s.hint && <span style={{ fontWeight: 400, opacity: 0.7, textTransform: "none" }}> {s.hint}</span>}</th>
+              ))}
+              <th style={{ ...th, width: 70 }}>St. dev.</th>
+            </tr>
+          </thead>
+          <tbody>
+            {WINDOWS.map((w, i) => {
+              const ws = stats.windows[w.id];
+              return (
+                <tr key={w.id} style={{ borderBottom: "1px solid #eee", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                  <td style={{ padding: "3px 5px", whiteSpace: "nowrap" }}>
+                    <div style={{ fontWeight: 700 }}>{w.short} <span style={{ fontWeight: 400, color: "#999" }}>({ws.n})</span></div>
+                    <div style={{ fontSize: 8, color: "#999" }}>{fmtShort(ws.from)} – {fmtShort(ws.to)}</div>
                   </td>
-                  {WINDOWS.map(w => {
-                    const rate = stats.windows[w.id][s.id];
+                  {STATS.map(s => {
+                    const rate = ws[s.id];
                     const finish = finishFor(rate);
                     const slip = daysBetween(revbSinkComplete, finish);
                     const picked = choice.window === w.id && choice.stat === s.id;
                     const on = picked && statsActive;
                     return (
                       <td
-                        key={w.id}
+                        key={s.id}
                         onClick={() => applyScenario(w.id, s.id)}
                         title={`Apply ${w.short} ${s.label} (${rate.toFixed(3)} m/d)`}
                         style={{
@@ -165,18 +170,15 @@ export default function ScenarioView({
                       </td>
                     );
                   })}
+                  <td style={{ padding: "3px 5px", color: "#888" }}>{ws.sd.toFixed(3)}</td>
                 </tr>
-              ))}
-              <tr style={{ borderTop: "2px solid #ddd", color: "#888" }}>
-                <td style={{ padding: "3px 5px", fontWeight: 700 }}>St. dev.</td>
-                {WINDOWS.map(w => <td key={w.id} style={{ padding: "3px 5px" }}>{stats.windows[w.id].sd.toFixed(3)}</td>)}
-              </tr>
-            </tbody>
-          </table>
-          <div style={{ fontSize: 8, color: "#999", marginTop: 4, lineHeight: 1.4 }}>
-            Statistics of complete months' average rate (m/day) in each window, applied as a constant rate from {fmtDate(today)} to final depth.
-            Days are against Rev-B sink complete ({fmtDate(revbSinkComplete)}). P25/P75 are percentiles of the monthly rate, so P75 is the faster rate.
-          </div>
+              );
+            })}
+          </tbody>
+        </table>
+        <div style={{ fontSize: 8, color: "#999", marginTop: 3, lineHeight: 1.4 }}>
+          Statistics of complete months' average rate (m/day) in each window, applied as a constant rate from {fmtDate(today)} to final depth.
+          Days are against Rev-B sink complete ({fmtDate(revbSinkComplete)}). P25/P75 are percentiles of the monthly rate, so P75 is the faster rate.
         </div>
       </div>
 
