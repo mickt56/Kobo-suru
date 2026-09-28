@@ -153,21 +153,25 @@ export default function ScenarioView({
                     const picked = choice.window === w.id && choice.stat === s.id;
                     const on = picked && statsActive;
                     return (
-                      <td
-                        key={s.id}
-                        onClick={() => applyScenario(w.id, s.id)}
-                        title={`Apply ${w.short} ${s.label} (${rate.toFixed(3)} m/d)`}
-                        style={{
-                          padding: "3px 5px", cursor: "pointer", whiteSpace: "nowrap", lineHeight: 1.25,
-                          background: on ? NAVY : undefined, color: on ? "#fff" : undefined,
-                          outline: picked && !on ? `1px dashed ${NAVY}` : "none", outlineOffset: -2,
-                        }}
-                      >
-                        <div style={{ fontWeight: 700 }}>{rate.toFixed(3)} <span style={{ fontWeight: 400, fontSize: 10, opacity: 0.7 }}>m/d</span></div>
-                        <div style={{ fontSize: 11 }}>
-                          {fmtDate(finish)}{" "}
-                          <b style={{ color: on ? "#fff" : slip > 0 ? RED_TEXT : GREEN }}>{signed(slip)}d</b>
-                        </div>
+                      <td key={s.id} style={{ padding: 0 }}>
+                        <button
+                          onClick={() => applyScenario(w.id, s.id)}
+                          aria-pressed={on}
+                          aria-label={`Apply ${w.short} ${s.label} rate, ${rate.toFixed(3)} metres per day: sink complete ${fmtDate(finish)}, ${Math.abs(slip)} days ${slip > 0 ? "after" : "before"} Rev-B`}
+                          title={`Apply ${w.short} ${s.label} (${rate.toFixed(3)} m/d)`}
+                          style={{
+                            display: "block", width: "100%", textAlign: "left", font: "inherit",
+                            padding: "3px 5px", cursor: "pointer", whiteSpace: "nowrap", lineHeight: 1.25,
+                            background: on ? NAVY : "transparent", color: on ? "#fff" : "inherit",
+                            border: picked && !on ? `1px dashed ${NAVY}` : "1px solid transparent",
+                          }}
+                        >
+                          <div style={{ fontWeight: 700 }}>{rate.toFixed(3)} <span style={{ fontWeight: 400, fontSize: 10, opacity: 0.7 }}>m/d</span></div>
+                          <div style={{ fontSize: 11 }}>
+                            {fmtDate(finish)}{" "}
+                            <b style={{ color: on ? "#fff" : slip > 0 ? RED_TEXT : GREEN }}>{signed(slip)}d</b>
+                          </div>
+                        </button>
                       </td>
                     );
                   })}

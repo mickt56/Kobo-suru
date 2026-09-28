@@ -74,6 +74,8 @@ reference/                 Original single-file prototype + handover doc
 
 ## Notes
 
+- Your shaft, tab, rate mode, rates and chosen scenario are remembered in the browser (what-if depths are not). "Reset all to defaults" at the bottom of the rates panel clears them.
+- **Print / PDF** in the header prints the current shaft and tab on A4 landscape (choose "Save as PDF" in the print dialog for a file).
 - The app opens on the Rev-B tab. The header shows the data date and, when a depth is typed in, a what-if marker with the actual depth and a reset.
 - Projections run from the latest reporting date in `src/data/progression.js` (currently 24 Sep 2026), so adding a new row moves "today" forward automatically.
 - Depth scale, lithology column, projection table, S-curve, Gantt and Rev-B forecasts are all driven from the same projection engine: change rates or override the current depth and everything updates.

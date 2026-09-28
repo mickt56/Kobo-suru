@@ -10,16 +10,17 @@ export default function RatesPanel({
   rates, setRates, handleRate,
   timelineRates, handleTimelineRate, addQuarter, curveReachesFinal,
   setHoveredFm,
-  stats, choice, applyScenario,
+  stats, choice, applyScenario, resetSettings,
 }) {
   const win = stats.windows[choice.window];
   return (
-    <div style={{ width: 270, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #ddd", padding: "10px 10px", overflowY: "auto" }}>
+    <div className="no-print" style={{ width: 270, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #ddd", padding: "10px 10px", overflowY: "auto" }}>
       <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
         {[{ id: "geology", l: "Geology" }, { id: "timeline", l: "Timeline" }, { id: "stats", l: "Stats" }].map(m => (
           <button
             key={m.id}
             onClick={() => setRateMode(m.id)}
+            aria-pressed={rateMode === m.id}
             style={{
               flex: 1, padding: "4px 0", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer",
               fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.3,
@@ -53,12 +54,14 @@ export default function RatesPanel({
                   </div>
                   <input
                     type="number" step="0.01" min="0.10" max="2.00" value={rates[g.id]}
+                    aria-label={`${g.label} rate, metres per day`}
                     onChange={e => handleRate(g.id, e.target.value)}
                     style={{ width: 44, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, fontSize: 11, fontWeight: 700, textAlign: "right", color: typeColor(g.type) }}
                   />
                 </div>
                 <input
                   type="range" min="0.10" max="1.50" step="0.01" value={rates[g.id]}
+                  aria-label={`${g.label} rate slider`}
                   onChange={e => handleRate(g.id, e.target.value)}
                   style={{ width: "100%", height: 3, accentColor: typeColor(g.type) }}
                 />
@@ -110,6 +113,7 @@ export default function RatesPanel({
                   </div>
                   <input
                     type="number" step="0.01" min="0.10" max="2.00" value={q.rate} disabled={done}
+                    aria-label={`${q.label} rate, metres per day`}
                     onChange={e => handleTimelineRate(activeShaft, i, e.target.value)}
                     style={{ width: 44, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, fontSize: 11, fontWeight: 700, textAlign: "right", color: "#163D4C" }}
                   />
@@ -117,6 +121,7 @@ export default function RatesPanel({
                 {!done && (
                   <input
                     type="range" min="0.10" max="1.50" step="0.01" value={q.rate}
+                    aria-label={`${q.label} rate slider`}
                     onChange={e => handleTimelineRate(activeShaft, i, e.target.value)}
                     style={{ width: "100%", height: 3, accentColor: "#163D4C" }}
                   />
@@ -150,6 +155,7 @@ export default function RatesPanel({
               <button
                 key={w.id}
                 onClick={() => applyScenario(w.id, choice.stat)}
+                aria-pressed={choice.window === w.id}
                 style={{
                   flex: 1, padding: "3px 0", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer", fontSize: 11, fontWeight: 600,
                   background: choice.window === w.id ? "#163D4C" : "#fff", color: choice.window === w.id ? "#fff" : "#163D4C",
@@ -168,6 +174,7 @@ export default function RatesPanel({
               <button
                 key={s.id}
                 onClick={() => applyScenario(choice.window, s.id)}
+                aria-pressed={choice.stat === s.id}
                 style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "4px 6px", marginBottom: 2,
                   border: `1px solid ${on ? "#163D4C" : "#ddd"}`, borderRadius: 3, cursor: "pointer",
@@ -188,6 +195,14 @@ export default function RatesPanel({
           </div>
         </>
       )}
+
+      <div style={{ marginTop: 14, paddingTop: 8, borderTop: "1px solid #e0e0e0", fontSize: 10, color: "#555", lineHeight: 1.4 }}>
+        Your shaft, tab, rate mode and rates are remembered in this browser.{" "}
+        <button
+          onClick={resetSettings}
+          style={{ background: "none", border: "none", padding: 0, color: "#163D4C", fontSize: 10, fontWeight: 700, textDecoration: "underline", cursor: "pointer" }}
+        >Reset all to defaults</button>
+      </div>
     </div>
   );
 }

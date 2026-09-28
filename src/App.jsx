@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { VS7, VS8 } from "./data/shafts.js";
 import { VS7_ACTUAL, VS8_ACTUAL } from "./data/progression.js";
 import { RATE_GROUPS } from "./data/rates.js";
@@ -6,10 +6,14 @@ import { REVB } from "./data/revb.js";
 import {
   computeProjection, computeTimelineProjection, computeTimelineFormations,
   buildProjectedCurve, buildPlannedTimeline,
-  generateQuarters, daysBetween, depthAtTime, dateAtDepth, MS_DAY,
+  generateQuarters, daysBetween, depthAtTime, dateAtDepth, fmtDate, MS_DAY,
 } from "./engine/projection.js";
 import { revbDaily, revbStatus, revbMilestones, revbMonthly } from "./engine/revb.js";
 import { WINDOWS, STATS, scenarioStats, rollingRate, constantRatePoints } from "./engine/stats.js";
+import {
+  readSettings, writeSettings, clearSettings, pick,
+  restoreRates, restoreChoice, restoreTimeline, serializeTimeline,
+} from "./settings.js";
 
 import PatternDefs from "./components/PatternDefs.jsx";
 import KPIBar from "./components/KPIBar.jsx";
@@ -40,23 +44,25 @@ const TABS = [
   { id: "scenarios", l: "Scenarios" },
 ];
 
+const DEFAULT_RATES = Object.fromEntries(RATE_GROUPS.map(g => [g.id, g.default]));
+const DEFAULT_CHOICE = { VS7: { window: "m3", stat: "median" }, VS8: { window: "m3", stat: "median" } };
+const DEFAULT_QUARTER_RATE = { VS7: 0.60, VS8: 0.75 };
+const RATE_MODES = ["geology", "timeline", "stats"];
+
+// Projections run from the latest reporting date in the progression data.
+const TODAY = new Date(Math.max(...Object.values(SHAFTS).map(s => s.actual[s.actual.length - 1].date.getTime())));
+
 export default function App() {
-  const [activeShaft, setActiveShaft] = useState("VS7");
-  const [rates, setRates] = useState(() => {
-    const r = {};
-    RATE_GROUPS.forEach(g => { r[g.id] = g.default; });
-    return r;
-  });
-  const [rateMode, setRateMode] = useState("geology");
-  const [rightTab, setRightTab] = useState("revb");
+  // Choices are remembered in this browser (see settings.js); what-if depths are not.
+  const [saved] = useState(readSettings);
+  const [activeShaft, setActiveShaft] = useState(() => pick(saved.shaft, Object.keys(SHAFTS), "VS7"));
+  const [rates, setRates] = useState(() => restoreRates(saved.rates, DEFAULT_RATES));
+  const [rateMode, setRateMode] = useState(() => pick(saved.mode, RATE_MODES, "geology"));
+  const [rightTab, setRightTab] = useState(() => pick(saved.tab, TABS.map(t => t.id), "revb"));
   const [hoveredFm, setHoveredFm] = useState(null);
   const [depthOverrides, setDepthOverrides] = useState({ VS7: null, VS8: null });
 
-  // Projections run from the latest reporting date in the progression data.
-  const today = useMemo(
-    () => new Date(Math.max(...Object.values(SHAFTS).map(s => s.actual[s.actual.length - 1].date.getTime()))),
-    [],
-  );
+  const today = TODAY;
   const shaft = SHAFTS[activeShaft];
   const defaultDepth = shaft.actual[shaft.actual.length - 1].depth;
   const curDepth = depthOverrides[activeShaft] ?? defaultDepth;
@@ -71,13 +77,7 @@ export default function App() {
   }, [activeShaft]);
 
   // Quarterly rates start at the current quarter; more quarters can be added per shaft.
-  const [timelineRates, setTimelineRates] = useState(() => {
-    const qs = generateQuarters(today, 8);
-    return {
-      VS7: qs.map(q => ({ ...q, rate: 0.60 })),
-      VS8: qs.map(q => ({ ...q, rate: 0.75 })),
-    };
-  });
+  const [timelineRates, setTimelineRates] = useState(() => restoreTimeline(saved.timeline, TODAY, DEFAULT_QUARTER_RATE));
   const addQuarter = useCallback(sk => setTimelineRates(p => {
     const last = p[sk].at(-1);
     const [next] = generateQuarters(new Date(last.end.getFullYear(), last.end.getMonth() + 1, 1), 1);
@@ -85,10 +85,43 @@ export default function App() {
   }), []);
 
   // Stats mode: a constant rate taken from the shaft's monthly history (window + statistic).
-  const [statsChoice, setStatsChoice] = useState({
-    VS7: { window: "m3", stat: "median" },
-    VS8: { window: "m3", stat: "median" },
-  });
+  const [statsChoice, setStatsChoice] = useState(() =>
+    restoreChoice(saved.statsChoice, DEFAULT_CHOICE, WINDOWS.map(w => w.id), STATS.map(s => s.id)));
+
+  useEffect(() => {
+    writeSettings({
+      shaft: activeShaft, tab: rightTab, mode: rateMode, rates, statsChoice,
+      timeline: serializeTimeline(timelineRates),
+    });
+  }, [activeShaft, rightTab, rateMode, rates, statsChoice, timelineRates]);
+
+  // Print: lay the page out at A4-landscape width first so the charts resize, then print.
+  const printView = useCallback(() => {
+    const root = document.documentElement;
+    root.classList.add("printing");
+    const done = () => { root.classList.remove("printing"); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done);
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => window.print(), 200)));
+  }, []);
+  // Ctrl+P / browser menu: apply the same layout (best effort; charts may not have time to resize).
+  useEffect(() => {
+    const before = () => document.documentElement.classList.add("printing");
+    const after = () => document.documentElement.classList.remove("printing");
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => { window.removeEventListener("beforeprint", before); window.removeEventListener("afterprint", after); };
+  }, []);
+
+  const resetSettings = useCallback(() => {
+    clearSettings();
+    setActiveShaft("VS7");
+    setRightTab("revb");
+    setRateMode("geology");
+    setRates(DEFAULT_RATES);
+    setStatsChoice(DEFAULT_CHOICE);
+    setTimelineRates(restoreTimeline(null, TODAY, DEFAULT_QUARTER_RATE));
+    setDepthOverrides({ VS7: null, VS8: null });
+  }, []);
   const shaftStats = useMemo(() => scenarioStats(shaft.actual), [shaft]);
   const choice = statsChoice[activeShaft];
   const statsRate = shaftStats.windows[choice.window][choice.stat];
@@ -216,7 +249,7 @@ export default function App() {
   }, []);
 
   return (
-    <div style={{ fontFamily: "Arial,sans-serif", background: "#f3f3f3", height: "100vh", minHeight: 640, display: "flex", flexDirection: "column" }}>
+    <div className="app-root" style={{ fontFamily: "Arial,sans-serif", background: "#f3f3f3", height: "100vh", minHeight: 640, display: "flex", flexDirection: "column" }}>
       <PatternDefs />
 
       <KPIBar
@@ -235,6 +268,7 @@ export default function App() {
         projEnd={projEnd}
         modeLabel={modeLabel}
         revbGap={revbGap}
+        onPrint={printView}
       />
 
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
@@ -267,13 +301,18 @@ export default function App() {
           stats={shaftStats}
           choice={choice}
           applyScenario={applyScenario}
+          resetSettings={resetSettings}
         />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <div style={{ display: "flex", gap: 0, borderBottom: "2px solid #163D4C", background: "#fff" }}>
+          <div className="no-print" role="tablist" aria-label="Views" style={{ display: "flex", gap: 0, borderBottom: "2px solid #163D4C", background: "#fff" }}>
             {TABS.map(t => (
               <button
                 key={t.id}
+                id={`tab-${t.id}`}
+                role="tab"
+                aria-selected={rightTab === t.id}
+                aria-controls="tab-panel"
                 onClick={() => setRightTab(t.id)}
                 style={{
                   padding: "8px 16px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
@@ -284,7 +323,10 @@ export default function App() {
               >{t.l}</button>
             ))}
           </div>
-          <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "10px 12px", background: "#fff", display: "flex", flexDirection: "column" }}>
+          <div className="tab-pane" id="tab-panel" role="tabpanel" aria-labelledby={`tab-${rightTab}`} style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "10px 12px", background: "#fff", display: "flex", flexDirection: "column" }}>
+            <div className="print-only" style={{ fontSize: 13, fontWeight: 700, color: "#163D4C", marginBottom: 8 }}>
+              {shaft.label} · {TABS.find(t => t.id === rightTab).l} · projection at {modeLabel} · data as at {fmtDate(today)}
+            </div>
             {rightTab === "schedule" && (
               <ScheduleTable
                 shaft={shaft}

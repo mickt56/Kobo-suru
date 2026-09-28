@@ -25,7 +25,7 @@ export default function SCurve({ shaft, scurveData, modeLabel, today, curDepth, 
         <div style={{ fontSize: 11, color: "#666", marginLeft: "auto" }}>Average since main sink start: {ptdRate} m/d over {ptdDays} days</div>
       </div>
 
-      <div style={{ flex: 1, minHeight: 300 }}>
+      <div className="print-chart" style={{ flex: 1, minHeight: 300 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={scurveData} margin={{ top: 20, right: 56, left: 5, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#eee" />

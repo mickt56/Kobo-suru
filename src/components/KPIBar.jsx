@@ -15,7 +15,7 @@ function Kpi({ label, value, color = "#fff", sub, labelStyle }) {
 
 export default function KPIBar({
   activeShaft, setActiveShaft, shaft, asOf, curDepth, actualDepth, overridden, resetDepth,
-  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap,
+  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap, onPrint,
 }) {
   const behind = revbGap.variance < 0;
   return (
@@ -30,7 +30,7 @@ export default function KPIBar({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 3 }} role="group" aria-label="Shaft">
+      <div className="no-print" style={{ display: "flex", gap: 3 }} role="group" aria-label="Shaft">
         {["VS7", "VS8"].map(k => (
           <button
             key={k}
@@ -42,6 +42,11 @@ export default function KPIBar({
             }}
           >{k}</button>
         ))}
+        <button
+          onClick={onPrint}
+          title="Print this shaft and tab, or choose Save as PDF in the print dialog"
+          style={{ marginLeft: 8, padding: "6px 12px", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, cursor: "pointer", fontWeight: 700, fontSize: 12, background: "transparent", color: "#fff" }}
+        >Print / PDF</button>
       </div>
 
       <div style={{ display: "flex", gap: 22, alignItems: "flex-start", marginLeft: "auto", flexWrap: "wrap" }}>

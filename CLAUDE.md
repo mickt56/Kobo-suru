@@ -13,6 +13,7 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 - **`src/engine/revb.js`** — pure Rev-B comparisons: `revbDaily`, `revbStatus`, `revbMilestones` (slip per milestone, forecasts, and per-stage rate reconciliation), `revbMonthly`.
 - **`src/engine/stats.js`** — rate statistics from past performance: `monthlyHistory`, `rateStats`, `scenarioStats` (per window), `rollingRate`, `constantRatePoints`. Drives the Stats rate mode and the Scenarios tab.
 - **`scripts/import-revb.mjs`** — `npm run import:revb -- <workbook.xlsx>`; reads sheets `VS7 Rev-B`, `VS8 Rev-B`, `Rev-B Tables`, locating columns by header text.
+- **`src/settings.js`** — remembers the viewer's choices in `localStorage` (key `avma-visualiser:settings:v1`) and validates everything read back. Stored: shaft, tab, rate mode, geology rates, scenario choice, Timeline quarter rates (by label). What-if depths are deliberately not stored.
 - **`src/components/`** — presentation only. State lives in `App.jsx` and is passed down.
 - **`src/App.jsx`** — composition, state ownership, memoised derived values. Assembles `SHAFTS = { VS7: {...VS7, actual: VS7_ACTUAL}, VS8: {...VS8, actual: VS8_ACTUAL} }`.
 
@@ -38,6 +39,8 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 - The Schedule table and Gantt use `modeProjection` in App, so they follow the active rate mode.
 - Timeline quarters start at the quarter containing `today`; "+ Add quarter" extends a shaft's list.
 - Readability: no text below 10px (body 11–12px); muted text #555/#666; red *text* uses `RED_TEXT` #C4002B (brand #E60033 stays for fills, lines and the header). Keep new UI within WCAG AA contrast.
+- Print: the header's Print / PDF button adds `html.printing` (A4-landscape width) so charts resize, then calls `window.print()`. CSS hooks in `App.css`: `.no-print` (side panels, tab bar, shaft toggle), `.print-only` (print heading), `.print-chart` (fixed chart height), `.app-root`, `.tab-pane`. New UI that shouldn't print needs `no-print`.
+- Accessibility: anything clickable is a `<button>` (not a clickable `td`/`div`); every input has a label or `aria-label`; toggles use `aria-pressed`; views are `role="tab"`/`tabpanel`. Keyboard focus shows a gold ring (`:focus-visible` in `App.css`) — don't override `outline` inline on focusable elements.
 - VS8's app final depth is 548.1m; the Rev-B daily sheet runs to 561m and is plotted as supplied.
 - The `LOWER` rate group covers Bulli Seam and everything below in VS7. VS8 terminates within Coalcliff SS so its `LOWER` slider is auto-hidden by `RatesPanel`.
 
