@@ -1,45 +1,78 @@
 import { fmtDate } from "../engine/projection.js";
 
-export default function KPIBar({ activeShaft, setActiveShaft, shaft, curDepth, totalRemaining, pctComplete, weightedRate, projDays, projEnd, revbStatus }) {
-  const kpis = [
-    { l: "Depth",     v: `${curDepth.toFixed(1)}m`,           c: "#F5B216" },
-    { l: "Remaining", v: `${totalRemaining.toFixed(1)}m`,     c: "#fff" },
-    { l: "Complete",  v: `${pctComplete}%`,                   c: "#F5B216" },
-    { l: "Wtd Rate",  v: `${weightedRate.toFixed(2)} m/d`,    c: "#fff" },
-    { l: "Days Left", v: `${projDays}`,                       c: "#F5B216" },
-    { l: "End Date",  v: projEnd ? fmtDate(projEnd) : "Extend qtrs", c: "#F5B216" },
-    { l: "vs Rev-B",  v: `${revbStatus.variance >= 0 ? "+" : ""}${revbStatus.variance.toFixed(1)}m`, c: revbStatus.variance >= 0 ? "#8fd694" : "#ff8a8a" },
-  ];
+const NAVY = "#163D4C", RED = "#E60033", GOLD = "#F5B216", AMBER = "#FFB74D";
+const LABEL = { color: "rgba(255,255,255,0.78)", fontSize: 10, textTransform: "uppercase", letterSpacing: 0.4, whiteSpace: "nowrap" };
+
+function Kpi({ label, value, color = "#fff", sub, labelStyle }) {
   return (
-    <>
-      <div style={{ background: "#E60033", padding: "10px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontWeight: 800, fontSize: 16, color: "#fff", letterSpacing: 1.5 }}>AVMA</span>
-          <span style={{ color: "rgba(255,255,255,0.8)", fontSize: 12 }}>Shaft Schedule Visualiser</span>
-        </div>
-        <div style={{ display: "flex", gap: 3 }}>
-          {["VS7", "VS8"].map(k => (
-            <button key={k} onClick={() => setActiveShaft(k)} style={{
-              padding: "4px 16px", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: 700, fontSize: 11,
-              background: activeShaft === k ? "#fff" : "rgba(255,255,255,0.18)",
-              color: activeShaft === k ? "#E60033" : "#fff",
-            }}>{k}</button>
-          ))}
+    <div style={{ minWidth: 0 }}>
+      <div style={{ ...LABEL, ...labelStyle }}>{label}</div>
+      <div style={{ color, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", lineHeight: 1.2 }}>{value}</div>
+      {sub && <div style={{ color: "rgba(255,255,255,0.78)", fontSize: 10, whiteSpace: "nowrap" }}>{sub}</div>}
+    </div>
+  );
+}
+
+export default function KPIBar({
+  activeShaft, setActiveShaft, shaft, asOf, curDepth, actualDepth, overridden, resetDepth,
+  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap,
+}) {
+  const behind = revbGap.variance < 0;
+  return (
+    <div style={{ background: NAVY, padding: "8px 16px", display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", borderBottom: `3px solid ${RED}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ background: RED, color: "#fff", fontWeight: 800, fontSize: 16, letterSpacing: 1.5, padding: "6px 10px", borderRadius: 3 }}>AVMA</div>
+        <div>
+          <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, whiteSpace: "nowrap" }}>Shaft Schedule Visualiser</div>
+          <div style={{ color: "rgba(255,255,255,0.78)", fontSize: 11, whiteSpace: "nowrap" }}>
+            {shaft.label} · Ø{shaft.diameter} · RL {shaft.braceRL}m · Final {shaft.finalDepth}m
+          </div>
         </div>
       </div>
-      <div style={{ background: "#163D4C", padding: "5px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 4 }}>
-        <div style={{ color: "#fff", fontSize: 11, fontWeight: 600 }}>
-          {shaft.label} — Ø{shaft.diameter} — RL {shaft.braceRL}m — Final {shaft.finalDepth}m
-        </div>
-        <div style={{ display: "flex", gap: 14 }}>
-          {kpis.map((k, i) => (
-            <div key={i} style={{ textAlign: "center" }}>
-              <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 7, textTransform: "uppercase", letterSpacing: 0.3 }}>{k.l}</div>
-              <div style={{ color: k.c, fontSize: 11, fontWeight: 700 }}>{k.v}</div>
+
+      <div style={{ display: "flex", gap: 3 }} role="group" aria-label="Shaft">
+        {["VS7", "VS8"].map(k => (
+          <button
+            key={k}
+            onClick={() => setActiveShaft(k)}
+            aria-pressed={activeShaft === k}
+            style={{
+              padding: "6px 16px", border: "none", borderRadius: 4, cursor: "pointer", fontWeight: 700, fontSize: 13,
+              background: activeShaft === k ? "#fff" : "rgba(255,255,255,0.14)", color: activeShaft === k ? RED : "#fff",
+            }}
+          >{k}</button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 22, alignItems: "flex-start", marginLeft: "auto", flexWrap: "wrap" }}>
+        {overridden ? (
+          <div style={{ border: `1px solid ${AMBER}`, borderRadius: 4, padding: "2px 8px", background: "rgba(255,183,77,0.12)" }}>
+            <div style={{ ...LABEL, color: AMBER, fontWeight: 700 }}>What-if depth</div>
+            <div style={{ color: AMBER, fontSize: 16, fontWeight: 700, lineHeight: 1.2 }}>{curDepth.toFixed(1)}m</div>
+            <div style={{ color: "rgba(255,255,255,0.85)", fontSize: 10, whiteSpace: "nowrap" }}>
+              actual {actualDepth.toFixed(1)}m ·{" "}
+              <button onClick={resetDepth} style={{ background: "none", border: "none", padding: 0, color: AMBER, fontSize: 10, cursor: "pointer", textDecoration: "underline" }}>reset</button>
             </div>
-          ))}
+          </div>
+        ) : (
+          <Kpi label="Depth" value={`${curDepth.toFixed(1)}m`} color={GOLD} />
+        )}
+        <Kpi label="Remaining" value={`${totalRemaining.toFixed(1)}m`} />
+        <Kpi label="Complete" value={`${pctComplete}%`} color={GOLD} />
+        <Kpi label="Wtd rate" value={`${weightedRate.toFixed(2)} m/d`} />
+        <Kpi label="Days left" value={`${projDays}`} color={GOLD} />
+        <Kpi label="Projected end" value={projEnd ? fmtDate(projEnd) : "Extend qtrs"} color={GOLD} sub={modeLabel} />
+        <Kpi
+          label="vs Rev-B"
+          value={`${behind ? "−" : "+"}${Math.abs(revbGap.variance).toFixed(1)}m`}
+          color={behind ? "#ff9a9a" : "#8fd694"}
+          sub={revbGap.daysBehind != null && behind ? `${revbGap.daysBehind} days behind` : null}
+        />
+        <div style={{ borderLeft: "1px solid rgba(255,255,255,0.25)", paddingLeft: 16 }}>
+          <div style={LABEL}>Data as at</div>
+          <div style={{ color: "#fff", fontSize: 16, fontWeight: 700, whiteSpace: "nowrap", lineHeight: 1.2 }}>{fmtDate(asOf)}</div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

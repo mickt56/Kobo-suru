@@ -34,6 +34,10 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 - Rev-B monthly figures come from the daily sheets, not the workbook's hand-entered monthly table (which drifts up to ~3m, and had VS7/VS8 Jul–Aug 2026 actual advances crossed).
 - Rate modes are `geology`, `timeline` and `stats`. Timeline and Stats both produce a calendar depth curve (`curvePts` in App); everything downstream treats them alike.
 - Scenario statistics mirror the workbook's "Sched Summary" sheet (QUARTILE.INC percentiles, STDEV.P, mean of monthly rates) but are computed from `progression.js`. Differences, on purpose: the first month uses actual days since main sink start (the sheet divides by the calendar month), and rolling 180/90-day rates use depth change (the sheet averages the lagging "Act. Advance m/day" column). P25/P75 are percentiles of monthly *rate*: P75 is the faster one.
+- The S-curve and header compare against Rev-B (`revbGap` in App: Rev-B depth at the as-of date vs the current, possibly what-if, depth). The Rev-B tab's own status uses the workbook's daily actuals. The geology-rate "plan" survives only as the faint Gantt bars, labelled as such.
+- The Schedule table and Gantt use `modeProjection` in App, so they follow the active rate mode.
+- Timeline quarters start at the quarter containing `today`; "+ Add quarter" extends a shaft's list.
+- Readability: no text below 10px (body 11–12px); muted text #555/#666; red *text* uses `RED_TEXT` #C4002B (brand #E60033 stays for fills, lines and the header). Keep new UI within WCAG AA contrast.
 - VS8's app final depth is 548.1m; the Rev-B daily sheet runs to 561m and is plotted as supplied.
 - The `LOWER` rate group covers Bulli Seam and everything below in VS7. VS8 terminates within Coalcliff SS so its `LOWER` slider is auto-hidden by `RatesPanel`.
 

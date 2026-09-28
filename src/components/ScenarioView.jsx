@@ -5,6 +5,7 @@ import { MS_DAY, addDays, daysBetween, depthAtTime, fmtDate, fmtShort } from "..
 import { WINDOWS, STATS, constantRatePoints } from "../engine/stats.js";
 
 const RED = "#E60033", NAVY = "#163D4C", GREEN = "#2a7a2a", GOLD = "#F5B216", SAGE = "#6D8F80", CHARCOAL = "#6D6D6D";
+const RED_TEXT = "#C4002B"; // brand red darkened for text on tinted backgrounds
 // How each statistic is drawn on the fan chart.
 const LINE = {
   worst: { stroke: "#aaa", width: 1, dash: "2 3" },
@@ -14,15 +15,15 @@ const LINE = {
   p75: { stroke: SAGE, width: 1.5, dash: "6 3" },
   best: { stroke: "#aaa", width: 1, dash: "2 3" },
 };
-const th = { padding: "4px 5px", color: "#fff", fontWeight: 600, fontSize: 8, textAlign: "left", whiteSpace: "nowrap", textTransform: "uppercase" };
+const th = { padding: "4px 5px", color: "#fff", fontWeight: 600, fontSize: 10, textAlign: "left", whiteSpace: "nowrap", textTransform: "uppercase" };
 const signed = (v, dp = 0) => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(dp)}`;
 
 function Stat({ label, value, sub, color = NAVY }) {
   return (
     <div style={{ flex: "1 1 130px", background: "#f8f8f8", border: "1px solid #e6e6e6", borderRadius: 4, padding: "5px 8px" }}>
-      <div style={{ fontSize: 7, color: "#888", textTransform: "uppercase", letterSpacing: 0.3 }}>{label}</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color }}>{value}</div>
-      {sub && <div style={{ fontSize: 8, color: "#888" }}>{sub}</div>}
+      <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase", letterSpacing: 0.3 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color }}>{value}</div>
+      {sub && <div style={{ fontSize: 10, color: "#666" }}>{sub}</div>}
     </div>
   );
 }
@@ -72,7 +73,7 @@ export default function ScenarioView({
           label="Needed for Rev-B sink complete"
           value={daysToRevb > 0 ? `${(remaining / daysToRevb).toFixed(2)} m/d` : "Date passed"}
           sub={`Rev-B ${fmtDate(revbSinkComplete)}`}
-          color={RED}
+          color={RED_TEXT}
         />
       </div>
 
@@ -88,10 +89,10 @@ export default function ScenarioView({
           ].map((leg, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 3 }}>
               <svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke={leg.c} strokeWidth={leg.w} strokeDasharray={leg.dash ?? undefined} /></svg>
-              <span style={{ fontSize: 8, color: "#666" }}>{leg.l}</span>
+              <span style={{ fontSize: 10, color: "#666" }}>{leg.l}</span>
             </div>
           ))}
-          <div style={{ fontSize: 8, color: "#aaa", marginLeft: "auto" }}>
+          <div style={{ fontSize: 10, color: "#666", marginLeft: "auto" }}>
             {WINDOWS.find(w => w.id === choice.window).label} ({win.n} months)
           </div>
         </div>
@@ -99,15 +100,15 @@ export default function ScenarioView({
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 18, right: 56, left: 5, bottom: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-              <XAxis dataKey="time" type="number" scale="time" domain={[xMin, xMax]} allowDataOverflow ticks={xTicks} tickFormatter={v => fmtShort(new Date(v))} tick={{ fontSize: 8 }} />
-              <YAxis reversed domain={[0, yMax]} tick={{ fontSize: 8 }} label={{ value: "Depth (m)", angle: -90, position: "insideLeft", fontSize: 8, fill: "#888" }} />
+              <XAxis dataKey="time" type="number" scale="time" domain={[xMin, xMax]} allowDataOverflow ticks={xTicks} tickFormatter={v => fmtShort(new Date(v))} tick={{ fontSize: 10 }} />
+              <YAxis reversed domain={[0, yMax]} tick={{ fontSize: 10 }} label={{ value: "Depth (m)", angle: -90, position: "insideLeft", fontSize: 10, fill: "#666" }} />
               <Tooltip
                 labelFormatter={v => fmtDate(new Date(v))}
                 formatter={(v, n) => [v != null ? `${v.toFixed(1)}m` : "—", n === "revb" ? "Rev-B" : n === "actual" ? "Actual" : STATS.find(s => s.id === n)?.label]}
-                contentStyle={{ fontSize: 10, borderRadius: 4 }}
+                contentStyle={{ fontSize: 11, borderRadius: 4 }}
               />
-              <ReferenceLine x={today.getTime()} stroke={RED} strokeDasharray="4 4" strokeWidth={1} label={{ value: fmtDate(today), position: "top", fontSize: 7, fill: RED }} />
-              <ReferenceLine y={shaft.finalDepth} stroke="#999" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Final ${shaft.finalDepth}m`, position: "right", fontSize: 7, fill: "#888" }} />
+              <ReferenceLine x={today.getTime()} stroke={RED} strokeDasharray="4 4" strokeWidth={1} label={{ value: fmtDate(today), position: "top", fontSize: 10, fill: RED }} />
+              <ReferenceLine y={shaft.finalDepth} stroke="#999" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Final ${shaft.finalDepth}m`, position: "right", fontSize: 10, fill: "#666" }} />
               <Line type="linear" dataKey="revb" stroke={NAVY} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
               <Line type="linear" dataKey="actual" stroke={RED} strokeWidth={2.5} dot={{ r: 1.5, fill: RED }} connectNulls isAnimationActive={false} />
               {STATS.map(s => (
@@ -123,10 +124,10 @@ export default function ScenarioView({
       </div>
 
       <div style={{ flex: "0 0 auto", overflowX: "auto" }}>
-        <div style={{ fontSize: 8, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 }}>
-          Sink complete by scenario <span style={{ fontWeight: 400, color: "#999", textTransform: "none" }}>(click a cell to apply it; the chart shows the selected window)</span>
+        <div style={{ fontSize: 10, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 }}>
+          Sink complete by scenario <span style={{ fontWeight: 400, color: "#666", textTransform: "none" }}>(click a cell to apply it; the chart shows the selected window)</span>
         </div>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10, tableLayout: "fixed" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11, tableLayout: "fixed" }}>
           <thead>
             <tr style={{ background: NAVY }}>
               <th style={{ ...th, width: 150 }}>Window (months)</th>
@@ -142,8 +143,8 @@ export default function ScenarioView({
               return (
                 <tr key={w.id} style={{ borderBottom: "1px solid #eee", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                   <td style={{ padding: "3px 5px", whiteSpace: "nowrap" }}>
-                    <div style={{ fontWeight: 700 }}>{w.short} <span style={{ fontWeight: 400, color: "#999" }}>({ws.n})</span></div>
-                    <div style={{ fontSize: 8, color: "#999" }}>{fmtShort(ws.from)} – {fmtShort(ws.to)}</div>
+                    <div style={{ fontWeight: 700 }}>{w.short} <span style={{ fontWeight: 400, color: "#666" }}>({ws.n})</span></div>
+                    <div style={{ fontSize: 10, color: "#666" }}>{fmtShort(ws.from)} – {fmtShort(ws.to)}</div>
                   </td>
                   {STATS.map(s => {
                     const rate = ws[s.id];
@@ -162,45 +163,45 @@ export default function ScenarioView({
                           outline: picked && !on ? `1px dashed ${NAVY}` : "none", outlineOffset: -2,
                         }}
                       >
-                        <div style={{ fontWeight: 700 }}>{rate.toFixed(3)} <span style={{ fontWeight: 400, fontSize: 8, opacity: 0.7 }}>m/d</span></div>
-                        <div style={{ fontSize: 9 }}>
+                        <div style={{ fontWeight: 700 }}>{rate.toFixed(3)} <span style={{ fontWeight: 400, fontSize: 10, opacity: 0.7 }}>m/d</span></div>
+                        <div style={{ fontSize: 11 }}>
                           {fmtDate(finish)}{" "}
-                          <b style={{ color: on ? "#fff" : slip > 0 ? RED : GREEN }}>{signed(slip)}d</b>
+                          <b style={{ color: on ? "#fff" : slip > 0 ? RED_TEXT : GREEN }}>{signed(slip)}d</b>
                         </div>
                       </td>
                     );
                   })}
-                  <td style={{ padding: "3px 5px", color: "#888" }}>{ws.sd.toFixed(3)}</td>
+                  <td style={{ padding: "3px 5px", color: "#666" }}>{ws.sd.toFixed(3)}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-        <div style={{ fontSize: 8, color: "#999", marginTop: 3, lineHeight: 1.4 }}>
+        <div style={{ fontSize: 10, color: "#666", marginTop: 3, lineHeight: 1.4 }}>
           Statistics of complete months' average rate (m/day) in each window, applied as a constant rate from {fmtDate(today)} to final depth.
           Days are against Rev-B sink complete ({fmtDate(revbSinkComplete)}). P25/P75 are percentiles of the monthly rate, so P75 is the faster rate.
         </div>
       </div>
 
       <div style={{ flex: "0 0 150px", display: "flex", flexDirection: "column" }}>
-        <div style={{ fontSize: 8, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 }}>
-          Monthly rate history <span style={{ fontWeight: 400, color: "#999", textTransform: "none" }}>(dark = in the selected window; lines = its P25, median, P75)</span>
+        <div style={{ fontSize: 10, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 3 }}>
+          Monthly rate history <span style={{ fontWeight: 400, color: "#666", textTransform: "none" }}>(dark = in the selected window; lines = its P25, median, P75)</span>
         </div>
         <div style={{ flex: 1 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={stats.months.map(m => ({ month: fmtShort(m.month), rate: m.rate, t: m.month.getTime(), sink: m.sink, days: m.days }))} margin={{ top: 4, right: 56, left: 5, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#eee" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 8 }} interval={0} />
-              <YAxis tick={{ fontSize: 8 }} domain={[0, Math.ceil(peak * 10) / 10]} />
+              <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={0} />
+              <YAxis tick={{ fontSize: 10 }} domain={[0, Math.ceil(peak * 10) / 10]} />
               <Tooltip
                 formatter={(v, n, item) => [`${v.toFixed(3)} m/d (${item.payload.sink.toFixed(1)}m / ${item.payload.days}d)`, "Rate"]}
-                contentStyle={{ fontSize: 10, borderRadius: 4 }}
+                contentStyle={{ fontSize: 11, borderRadius: 4 }}
               />
               <Bar dataKey="rate" isAnimationActive={false}>
                 {stats.months.map((m, i) => <Cell key={i} fill={m.month.getTime() >= monthStart ? NAVY : "#cfd8dc"} />)}
               </Bar>
               <ReferenceLine y={win.p25} stroke={SAGE} strokeDasharray="6 3" />
-              <ReferenceLine y={win.median} stroke={GOLD} strokeWidth={2} label={{ value: "Median", position: "right", fontSize: 7, fill: "#b8860b" }} />
+              <ReferenceLine y={win.median} stroke={GOLD} strokeWidth={2} label={{ value: "Median", position: "right", fontSize: 10, fill: "#b8860b" }} />
               <ReferenceLine y={win.p75} stroke={SAGE} strokeDasharray="6 3" />
             </BarChart>
           </ResponsiveContainer>

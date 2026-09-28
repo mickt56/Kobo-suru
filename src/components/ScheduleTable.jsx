@@ -1,85 +1,112 @@
 import { LITHO_COLORS } from "../data/shafts.js";
-import { daysBetween, fmtDate } from "../engine/projection.js";
+import { dateAtDepth, daysBetween, fmtDate } from "../engine/projection.js";
 
-export default function ScheduleTable({ shaft, projection, today, projEnd, projDays, totalRemaining, weightedRate, setHoveredFm }) {
+const NAVY = "#163D4C", RED = "#E60033", GREEN = "#2a7a2a", AMBER = "#a33a00";
+const RED_TEXT = "#C4002B"; // brand red darkened for text on tinted backgrounds
+const COLS = [
+  { h: "Formation" }, { h: "From", n: 1 }, { h: "To", n: 1 }, { h: "Thick.", n: 1 }, { h: "Rem.", n: 1 },
+  { h: "Rate m/d", n: 1 }, { h: "Days", n: 1 }, { h: "Act. rate", n: 1 }, { h: "Entry" }, { h: "Exit" },
+  { h: "Rev-B exit", sep: 1 }, { h: "vs Rev-B (d)", n: 1 }, { h: "" },
+];
+const cell = { padding: "5px 6px", whiteSpace: "nowrap" };
+const num = { ...cell, textAlign: "right" };
+const signed = v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v)}`;
+
+export default function ScheduleTable({
+  shaft, projection, modeLabel, revbPts, today, projEnd, projDays, totalRemaining, weightedRate, setHoveredFm,
+}) {
   return (
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
-      <thead>
-        <tr style={{ background: "#163D4C" }}>
-          {["Formation", "From", "To", "Thick.", "Rem.", "Rate", "Days", "Act. Rate", "Entry", "Exit", ""].map(h => (
-            <th key={h} style={{ padding: "4px 4px", color: "#fff", fontWeight: 600, fontSize: 8, textAlign: "left", whiteSpace: "nowrap", textTransform: "uppercase" }}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {projection.formations.map((fm, i) => {
-          const isA = fm.status === "active";
-          const isC = fm.status === "complete";
-          const origFm = shaft.formations.find(f => f.code === fm.code);
-          const hasActual = origFm?.aStart && origFm?.aFin;
-          const actDays = hasActual ? daysBetween(origFm.aStart, origFm.aFin) : null;
-          const actRate = hasActual && actDays > 0 ? fm.thickness / actDays : null;
-          const showActStart = origFm?.aStart;
-          const showActFin = origFm?.aFin;
-          return (
-            <tr
-              key={i}
-              onMouseEnter={() => setHoveredFm(fm.code)}
-              onMouseLeave={() => setHoveredFm(null)}
-              style={{
-                background: isA ? "#FFF8E8" : isC ? "#f0f0f0" : i % 2 === 0 ? "#fff" : "#fafafa",
-                borderBottom: "1px solid #eee",
-                opacity: isC ? 0.4 : 1,
-              }}
-            >
-              <td style={{ padding: "3px 4px", fontWeight: 600, whiteSpace: "nowrap" }}>
-                <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: 2, marginRight: 3, background: LITHO_COLORS[fm.code], border: "1px solid rgba(0,0,0,0.1)", verticalAlign: "middle" }} />
-                {fm.name}
-              </td>
-              <td style={{ padding: "3px 4px", textAlign: "right" }}>{fm.from}</td>
-              <td style={{ padding: "3px 4px", textAlign: "right" }}>{fm.to}</td>
-              <td style={{ padding: "3px 4px", textAlign: "right" }}>{fm.thickness.toFixed(1)}</td>
-              <td style={{ padding: "3px 4px", textAlign: "right", fontWeight: isA ? 700 : 400, color: isA ? "#E60033" : undefined }}>
-                {isC ? "—" : `${fm.remaining}m`}
-              </td>
-              <td style={{ padding: "3px 4px", textAlign: "right" }}>{isC ? "—" : fm.rate.toFixed(2)}</td>
-              <td style={{ padding: "3px 4px", textAlign: "right", fontWeight: 600 }}>{isC ? "—" : fm.days.toFixed(0)}</td>
-              <td style={{ padding: "3px 4px", textAlign: "right", fontWeight: 700, color: actRate ? (actRate > 0.6 ? "#2a7a2a" : "#e65100") : "#aaa" }}>
-                {actRate ? `${actRate.toFixed(2)}` : (isC && showActFin ? "—" : "")}
-                {actDays ? <span style={{ fontWeight: 400, color: "#888", fontSize: 8 }}> ({actDays}d)</span> : ""}
-              </td>
-              <td style={{ padding: "3px 4px", whiteSpace: "nowrap", fontSize: 9 }}>
-                {isC && showActStart ? fmtDate(showActStart) : fm.entryDate ? fmtDate(fm.entryDate) : "—"}
-              </td>
-              <td style={{ padding: "3px 4px", whiteSpace: "nowrap", fontSize: 9 }}>
-                {isC && showActFin ? fmtDate(showActFin) : fm.exitDate ? fmtDate(fm.exitDate) : "—"}
-              </td>
-              <td style={{ padding: "3px 4px" }}>
-                {isC
-                  ? <span style={{ fontSize: 7, color: "#888" }}>✓</span>
-                  : isA
-                    ? <span style={{ fontSize: 7, color: "#E60033", fontWeight: 700 }}>● ACTIVE</span>
-                    : <span style={{ fontSize: 7, color: "#bbb" }}>○</span>}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-      <tfoot>
-        <tr style={{ background: "#E60033", color: "#fff", fontWeight: 700 }}>
-          <td style={{ padding: "5px 4px" }}>TOTAL</td>
-          <td style={{ padding: "5px 4px", textAlign: "right" }}>0</td>
-          <td style={{ padding: "5px 4px", textAlign: "right" }}>{shaft.finalDepth}</td>
-          <td style={{ padding: "5px 4px", textAlign: "right" }}>{shaft.finalDepth}</td>
-          <td style={{ padding: "5px 4px", textAlign: "right" }}>{totalRemaining.toFixed(1)}m</td>
-          <td style={{ padding: "5px 4px", textAlign: "right" }}>{weightedRate.toFixed(2)}</td>
-          <td style={{ padding: "5px 4px", textAlign: "right" }}>{projDays}</td>
-          <td style={{ padding: "5px 4px" }}></td>
-          <td style={{ padding: "5px 4px", fontSize: 9 }}>{fmtDate(today)}</td>
-          <td style={{ padding: "5px 4px", fontSize: 9 }}>{projEnd ? fmtDate(projEnd) : "—"}</td>
-          <td />
-        </tr>
-      </tfoot>
-    </table>
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: NAVY, textTransform: "uppercase", marginBottom: 4 }}>
+        Projection by formation <span style={{ fontWeight: 400, color: "#555", textTransform: "none" }}>· {modeLabel}</span>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <thead>
+          <tr style={{ background: NAVY }}>
+            {COLS.map(c => (
+              <th key={c.h} style={{
+                ...cell, color: "#fff", fontWeight: 600, fontSize: 11, textTransform: "uppercase",
+                textAlign: c.n ? "right" : "left", borderLeft: c.sep ? "1px solid rgba(255,255,255,0.3)" : undefined,
+              }}>{c.h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {projection.formations.map((fm, i) => {
+            const isA = fm.status === "active";
+            const isC = fm.status === "complete";
+            const noDates = !isC && !fm.exitDate; // beyond the end of the Timeline quarters
+            const origFm = shaft.formations.find(f => f.code === fm.code);
+            const hasActual = origFm?.aStart && origFm?.aFin;
+            const actDays = hasActual ? daysBetween(origFm.aStart, origFm.aFin) : null;
+            const actRate = hasActual && actDays > 0 ? fm.thickness / actDays : null;
+            const entry = isC && origFm?.aStart ? origFm.aStart : fm.entryDate;
+            const exit = isC ? origFm?.aFin ?? null : fm.exitDate;
+            const revbT = dateAtDepth(revbPts, fm.to);
+            const revbExit = revbT != null ? new Date(revbT) : null;
+            const slip = exit && revbExit ? daysBetween(revbExit, exit) : null;
+            return (
+              <tr
+                key={i}
+                onMouseEnter={() => setHoveredFm(fm.code)}
+                onMouseLeave={() => setHoveredFm(null)}
+                style={{
+                  background: isA ? "#FFF8E8" : isC ? "#f3f3f3" : i % 2 === 0 ? "#fff" : "#fafafa",
+                  borderBottom: "1px solid #e8e8e8",
+                  color: isC ? "#555" : "#222",
+                }}
+              >
+                <td style={{ ...cell, fontWeight: 600 }}>
+                  <span style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, marginRight: 6, background: LITHO_COLORS[fm.code], border: "1px solid rgba(0,0,0,0.2)", verticalAlign: "middle" }} />
+                  {fm.name}
+                </td>
+                <td style={num}>{fm.from}</td>
+                <td style={num}>{fm.to}</td>
+                <td style={num}>{fm.thickness.toFixed(1)}</td>
+                <td style={{ ...num, fontWeight: isA ? 700 : 400, color: isA ? RED_TEXT : undefined }}>{isC ? "—" : `${fm.remaining}m`}</td>
+                <td style={num}>{isC || noDates ? "—" : fm.rate.toFixed(2)}</td>
+                <td style={{ ...num, fontWeight: 600 }}>{isC || noDates ? "—" : fm.days.toFixed(0)}</td>
+                <td style={{ ...num, fontWeight: 700, color: actRate ? (actRate >= fm.rate || actRate > 0.6 ? GREEN : AMBER) : "#555" }}>
+                  {actRate ? actRate.toFixed(2) : ""}
+                  {actDays ? <span style={{ fontWeight: 400, color: "#555", fontSize: 11 }}> ({actDays}d)</span> : ""}
+                </td>
+                <td style={cell}>{entry ? fmtDate(entry) : "—"}</td>
+                <td style={cell}>{exit ? fmtDate(exit) : "—"}</td>
+                <td style={{ ...cell, borderLeft: "1px solid #e8e8e8" }}>{revbExit ? fmtDate(revbExit) : "—"}</td>
+                <td style={{ ...num, fontWeight: 700, color: slip == null ? "#555" : slip > 0 ? RED_TEXT : GREEN }}>{slip == null ? "—" : signed(slip)}</td>
+                <td style={cell}>
+                  {isC
+                    ? <span style={{ fontSize: 11, color: "#555" }}>✓ Done</span>
+                    : isA
+                      ? <span style={{ fontSize: 11, color: RED_TEXT, fontWeight: 700 }}>● Active</span>
+                      : <span style={{ fontSize: 11, color: "#555" }}>○ Next</span>}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+        <tfoot>
+          <tr style={{ background: RED, color: "#fff", fontWeight: 700 }}>
+            <td style={cell}>TOTAL</td>
+            <td style={num}>0</td>
+            <td style={num}>{shaft.finalDepth}</td>
+            <td style={num}>{shaft.finalDepth}</td>
+            <td style={num}>{totalRemaining.toFixed(1)}m</td>
+            <td style={num}>{weightedRate.toFixed(2)}</td>
+            <td style={num}>{projDays}</td>
+            <td style={cell}></td>
+            <td style={cell}>{fmtDate(today)}</td>
+            <td style={cell}>{projEnd ? fmtDate(projEnd) : "—"}</td>
+            <td style={cell} colSpan={3}></td>
+          </tr>
+        </tfoot>
+      </table>
+      </div>
+      <div style={{ fontSize: 11, color: "#555", marginTop: 6, lineHeight: 1.5 }}>
+        Completed formations show actual entry and exit dates where recorded. Rev-B exit is when the daily Rev-B baseline reaches the formation's base;
+        vs Rev-B is the actual or projected exit minus that date (positive = late). Formations above the Rev-B start depth have no Rev-B date.
+      </div>
+    </div>
   );
 }

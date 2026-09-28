@@ -11,20 +11,20 @@ export default function LithologyColumn({
 
   return (
     <div style={{ width: 160, flexShrink: 0, background: "#fff", borderRight: "1px solid #ddd", padding: "10px 6px", display: "flex", flexDirection: "column", minHeight: 0 }}>
-      <div style={{ fontSize: 9, fontWeight: 700, color: "#163D4C", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>Lithology</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "#163D4C", marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.4 }}>Lithology</div>
 
       <div style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
-        <label style={{ fontSize: 8, color: "#888" }}>Depth:</label>
+        <label style={{ fontSize: 10, color: "#666" }}>Depth:</label>
         <input
           type="number" step="0.1" value={curDepth}
           onChange={e => handleDepthChange(e.target.value)}
-          style={{ width: 56, padding: "2px 4px", border: "1px solid #ccc", borderRadius: 3, fontSize: 11, fontWeight: 600 }}
+          style={{ width: 56, padding: "2px 4px", border: "1px solid #ccc", borderRadius: 3, fontSize: 12, fontWeight: 600 }}
         />
-        <span style={{ fontSize: 7, color: "#aaa" }}>m</span>
+        <span style={{ fontSize: 10, color: "#666" }}>m</span>
         {depthOverrides[activeShaft] !== null && (
           <button
             onClick={() => setDepthOverrides(p => ({ ...p, [activeShaft]: null }))}
-            style={{ fontSize: 7, color: "#E60033", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            style={{ fontSize: 10, color: "#E60033", background: "none", border: "none", cursor: "pointer", padding: 0 }}
           >↺</button>
         )}
       </div>
@@ -35,12 +35,12 @@ export default function LithologyColumn({
             .filter(d => d <= shaft.finalDepth)
             .map(d => (
               <div key={d} style={{
-                position: "absolute", top: d * px - 5, right: 2, fontSize: 6, color: "#888",
+                position: "absolute", top: d * px - 5, right: 2, fontSize: 9, color: "#666",
                 fontWeight: d % 100 === 0 ? 600 : 400, lineHeight: "10px", textAlign: "right",
               }}>{d}</div>
             ))}
           <div style={{
-            position: "absolute", top: curDepth * px - 5, right: 2, fontSize: 7, color: "#E60033",
+            position: "absolute", top: curDepth * px - 5, right: 2, fontSize: 10, color: "#E60033",
             fontWeight: 700, lineHeight: "10px", textAlign: "right",
           }}>{curDepth.toFixed(0)}</div>
         </div>
@@ -59,7 +59,7 @@ export default function LithologyColumn({
                   background: LITHO_COLORS[fm.code], borderBottom: "1px solid rgba(0,0,0,0.06)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: h > 22 ? 7 : 0, fontWeight: 700,
-                  color: DARK_CODES.has(fm.code) ? "#fff" : "#444",
+                  color: DARK_CODES.has(fm.code) ? "#fff" : "#222",
                   outline: hoveredFm === fm.code ? "2px solid #E60033" : "none",
                   outlineOffset: -2,
                   zIndex: hoveredFm === fm.code ? 3 : 1,
@@ -73,7 +73,7 @@ export default function LithologyColumn({
           {curDepth * px > 30 && (
             <div style={{
               position: "absolute", top: (curDepth * px) / 2 - 6, left: 0, right: 0, textAlign: "center",
-              fontSize: 7, fontWeight: 800, color: "#777", letterSpacing: 2, zIndex: 5, pointerEvents: "none",
+              fontSize: 10, fontWeight: 800, color: "#666", letterSpacing: 2, zIndex: 5, pointerEvents: "none",
             }}>MINED</div>
           )}
           <div style={{ position: "absolute", top: curDepth * px - 1, left: 0, right: 0, height: 2, background: "#E60033", zIndex: 6 }} />
@@ -86,19 +86,23 @@ export default function LithologyColumn({
         </div>
       </div>
 
-      <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-        <svg width="10" height="10"><rect width="10" height="10" fill="url(#mH)" stroke="#999" strokeWidth="0.5" rx="1" /></svg>
-        <span style={{ fontSize: 7, color: "#888" }}>Mined</span>
-        <div style={{ width: 10, height: 2, background: "#E60033", borderRadius: 1 }} />
-        <span style={{ fontSize: 7, color: "#888" }}>Current</span>
-        <div style={{ width: 10, height: 0, borderTop: "1.5px dashed #F5B216" }} />
-        <span style={{ fontSize: 7, color: "#888" }}>Stand-off</span>
+      <div style={{ marginTop: 4, display: "flex", alignItems: "center", columnGap: 8, rowGap: 2, flexWrap: "wrap", fontSize: 10, color: "#555" }}>
+        {[
+          { key: <svg width="10" height="10"><rect width="10" height="10" fill="url(#mH)" stroke="#999" strokeWidth="0.5" rx="1" /></svg>, l: "Mined" },
+          { key: <div style={{ width: 10, height: 2, background: "#E60033", borderRadius: 1 }} />, l: "Current" },
+          { key: <div style={{ width: 10, height: 0, borderTop: "1.5px dashed #F5B216" }} />, l: "Stand-off" },
+        ].map(item => (
+          <span key={item.l} style={{ display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>{item.key}{item.l}</span>
+        ))}
       </div>
 
-      <div style={{ marginTop: 5, fontSize: 7, color: "#666", lineHeight: 1.5, background: "#f8f8f8", borderRadius: 3, padding: "3px 5px", border: "1px solid #eee" }}>
-        <div>Hold: <b>{shaft.holdPoint}m</b> · Stand-off: <b>{shaft.standOff}m</b></div>
-        <div>Roadway: <b>{shaft.roadwayRoof}m</b> · Final: <b>{shaft.finalDepth}m</b></div>
-        {shaft.sumpDepth > 0 && <div>Sump: <b>{shaft.sumpDepth}m</b></div>}
+      <div style={{ marginTop: 5, fontSize: 10, color: "#555", lineHeight: 1.5, background: "#f8f8f8", borderRadius: 3, padding: "3px 6px", border: "1px solid #eee" }}>
+        {[
+          ["Hold point", shaft.holdPoint], ["Stand-off", shaft.standOff], ["Roadway roof", shaft.roadwayRoof],
+          ["Final", shaft.finalDepth], ...(shaft.sumpDepth > 0 ? [["Sump", shaft.sumpDepth]] : []),
+        ].map(([l, v]) => (
+          <div key={l} style={{ display: "flex", justifyContent: "space-between" }}><span>{l}</span><b style={{ color: "#333" }}>{v}m</b></div>
+        ))}
       </div>
     </div>
   );

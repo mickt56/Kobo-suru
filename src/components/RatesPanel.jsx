@@ -8,13 +8,13 @@ export default function RatesPanel({
   shaft, activeShaft, today, curDepth,
   rateMode, setRateMode,
   rates, setRates, handleRate,
-  timelineRates, handleTimelineRate,
+  timelineRates, handleTimelineRate, addQuarter, curveReachesFinal,
   setHoveredFm,
   stats, choice, applyScenario,
 }) {
   const win = stats.windows[choice.window];
   return (
-    <div style={{ width: 250, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #ddd", padding: "10px 10px", overflowY: "auto" }}>
+    <div style={{ width: 270, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #ddd", padding: "10px 10px", overflowY: "auto" }}>
       <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
         {[{ id: "geology", l: "Geology" }, { id: "timeline", l: "Timeline" }, { id: "stats", l: "Stats" }].map(m => (
           <button
@@ -22,7 +22,7 @@ export default function RatesPanel({
             onClick={() => setRateMode(m.id)}
             style={{
               flex: 1, padding: "4px 0", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer",
-              fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.3,
+              fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.3,
               background: rateMode === m.id ? "#163D4C" : "#fff",
               color: rateMode === m.id ? "#fff" : "#163D4C",
             }}
@@ -32,7 +32,7 @@ export default function RatesPanel({
 
       {rateMode === "geology" && (
         <>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
             Advance Rates (m/day)
           </div>
           {RATE_GROUPS.map(g => {
@@ -49,12 +49,12 @@ export default function RatesPanel({
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                     <div style={{ width: 7, height: 7, borderRadius: 2, background: g.color, border: "1px solid rgba(0,0,0,0.1)" }} />
-                    <span style={{ fontSize: 9, fontWeight: 600, color: "#333" }}>{g.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: "#333" }}>{g.label}</span>
                   </div>
                   <input
                     type="number" step="0.01" min="0.10" max="2.00" value={rates[g.id]}
                     onChange={e => handleRate(g.id, e.target.value)}
-                    style={{ width: 44, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, fontSize: 10, fontWeight: 700, textAlign: "right", color: typeColor(g.type) }}
+                    style={{ width: 44, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, fontSize: 11, fontWeight: 700, textAlign: "right", color: typeColor(g.type) }}
                   />
                 </div>
                 <input
@@ -66,7 +66,7 @@ export default function RatesPanel({
             );
           })}
           <div style={{ marginTop: 8, borderTop: "1px solid #e0e0e0", paddingTop: 6 }}>
-            <div style={{ fontSize: 8, color: "#888", marginBottom: 3, textTransform: "uppercase" }}>Presets</div>
+            <div style={{ fontSize: 10, color: "#666", marginBottom: 3, textTransform: "uppercase" }}>Presets</div>
             {PRESETS.map(p => (
               <button
                 key={p.label}
@@ -78,7 +78,7 @@ export default function RatesPanel({
                 style={{
                   display: "block", width: "100%", padding: "3px 5px", marginBottom: 2,
                   border: "1px solid #ccc", borderRadius: 3, background: "#fff", cursor: "pointer",
-                  fontSize: 9, fontWeight: 600, color: "#163D4C", textAlign: "left",
+                  fontSize: 11, fontWeight: 600, color: "#163D4C", textAlign: "left",
                 }}
               >
                 {p.label} {p.offset > 0 ? `(+${p.offset})` : p.offset < 0 ? `(${p.offset})` : "(default)"}
@@ -90,7 +90,7 @@ export default function RatesPanel({
 
       {rateMode === "timeline" && (
         <>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
             {activeShaft} Quarterly Rates (m/day)
           </div>
           {timelineRates[activeShaft].map((q, i) => {
@@ -101,17 +101,17 @@ export default function RatesPanel({
             const fm = getFormationAt(shaft, Math.min(shaft.finalDepth - 0.1, depthAtQ));
             const done = depthAtQ >= shaft.finalDepth;
             return (
-              <div key={i} style={{ marginBottom: 5, opacity: q.end < today || done ? 0.35 : 1 }}>
+              <div key={i} style={{ marginBottom: 5, opacity: q.end < today || done ? 0.75 : 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1 }}>
                   <div>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: "#163D4C" }}>{q.label}</span>
-                    {fm && !done && <span style={{ fontSize: 7, color: "#888", marginLeft: 4 }}>~{fm.code}</span>}
-                    {done && <span style={{ fontSize: 7, color: "#2a7a2a", marginLeft: 4 }}>✓ Complete</span>}
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#163D4C" }}>{q.label}</span>
+                    {fm && !done && <span style={{ fontSize: 10, color: "#666", marginLeft: 4 }}>~{fm.code}</span>}
+                    {done && <span style={{ fontSize: 10, color: "#2a7a2a", marginLeft: 4 }}>✓ Complete</span>}
                   </div>
                   <input
                     type="number" step="0.01" min="0.10" max="2.00" value={q.rate} disabled={done}
                     onChange={e => handleTimelineRate(activeShaft, i, e.target.value)}
-                    style={{ width: 44, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, fontSize: 10, fontWeight: 700, textAlign: "right", color: "#163D4C" }}
+                    style={{ width: 44, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, fontSize: 11, fontWeight: 700, textAlign: "right", color: "#163D4C" }}
                   />
                 </div>
                 {!done && (
@@ -124,7 +124,16 @@ export default function RatesPanel({
               </div>
             );
           })}
-          <div style={{ fontSize: 8, color: "#888", marginTop: 4, lineHeight: 1.4 }}>
+          {!curveReachesFinal && (
+            <div role="status" style={{ fontSize: 11, color: "#7a2e00", background: "#fff3e0", border: "1px solid #ffcc80", borderRadius: 3, padding: "4px 6px", margin: "4px 0" }}>
+              These quarters end before final depth. Add a quarter or raise the rates.
+            </div>
+          )}
+          <button
+            onClick={() => addQuarter(activeShaft)}
+            style={{ width: "100%", padding: "4px 0", marginTop: 2, border: "1px dashed #163D4C", borderRadius: 3, background: "#fff", color: "#163D4C", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
+          >+ Add quarter</button>
+          <div style={{ fontSize: 10, color: "#666", marginTop: 4, lineHeight: 1.4 }}>
             Calendar-based rates, independent of formation boundaries. ~code shows expected formation at quarter start.
           </div>
         </>
@@ -132,23 +141,23 @@ export default function RatesPanel({
 
       {rateMode === "stats" && (
         <>
-          <div style={{ fontSize: 9, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
             {activeShaft} Rate from past performance
           </div>
-          <div style={{ fontSize: 8, color: "#888", marginBottom: 3, textTransform: "uppercase" }}>Look-back window</div>
+          <div style={{ fontSize: 10, color: "#666", marginBottom: 3, textTransform: "uppercase" }}>Look-back window</div>
           <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
             {WINDOWS.map(w => (
               <button
                 key={w.id}
                 onClick={() => applyScenario(w.id, choice.stat)}
                 style={{
-                  flex: 1, padding: "3px 0", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer", fontSize: 9, fontWeight: 600,
+                  flex: 1, padding: "3px 0", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer", fontSize: 11, fontWeight: 600,
                   background: choice.window === w.id ? "#163D4C" : "#fff", color: choice.window === w.id ? "#fff" : "#163D4C",
                 }}
               >{w.short}</button>
             ))}
           </div>
-          <div style={{ fontSize: 8, color: "#888", marginBottom: 3 }}>
+          <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>
             {win.n} months, {fmtShort(win.from)} to {fmtShort(win.to)} · st. dev. {win.sd.toFixed(3)}
           </div>
           {STATS.map(s => {
@@ -162,7 +171,7 @@ export default function RatesPanel({
                 style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", padding: "4px 6px", marginBottom: 2,
                   border: `1px solid ${on ? "#163D4C" : "#ddd"}`, borderRadius: 3, cursor: "pointer",
-                  background: on ? "#163D4C" : "#fff", color: on ? "#fff" : "#333", fontSize: 9, textAlign: "left",
+                  background: on ? "#163D4C" : "#fff", color: on ? "#fff" : "#333", fontSize: 11, textAlign: "left",
                 }}
               >
                 <span style={{ fontWeight: 700 }}>
@@ -174,7 +183,7 @@ export default function RatesPanel({
               </button>
             );
           })}
-          <div style={{ fontSize: 8, color: "#888", marginTop: 4, lineHeight: 1.4 }}>
+          <div style={{ fontSize: 10, color: "#666", marginTop: 4, lineHeight: 1.4 }}>
             Constant rate to final depth from today. P25/P75 are percentiles of the monthly rate: P75 is the faster month rate, not a 75%-confidence date. See the Scenarios tab to compare all of them.
           </div>
         </>

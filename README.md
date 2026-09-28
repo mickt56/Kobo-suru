@@ -74,6 +74,7 @@ reference/                 Original single-file prototype + handover doc
 
 ## Notes
 
+- The app opens on the Rev-B tab. The header shows the data date and, when a depth is typed in, a what-if marker with the actual depth and a reset.
 - Projections run from the latest reporting date in `src/data/progression.js` (currently 24 Sep 2026), so adding a new row moves "today" forward automatically.
 - Depth scale, lithology column, projection table, S-curve, Gantt and Rev-B forecasts are all driven from the same projection engine: change rates or override the current depth and everything updates.
 - Rate modes: **Geology** (per-formation rates), **Timeline** (quarterly rates) and **Stats** (a constant rate from past performance). In Stats mode, pick a look-back window (whole project, last 6 or 3 complete months) and a statistic (worst, P25, median, mean, P75, best of the monthly rates). The Scenarios tab compares all of them; click a cell to apply it. These follow the workbook's "Sched Summary" sheet but are calculated from `progression.js`, so they update with each new month-end row.

@@ -5,8 +5,8 @@ import { RATE_GROUPS } from "./data/rates.js";
 import { REVB } from "./data/revb.js";
 import {
   computeProjection, computeTimelineProjection, computeTimelineFormations,
-  buildPlannedCurve, buildProjectedCurve, buildPlannedTimeline,
-  generateQuarters, daysBetween, depthAtTime, MS_DAY,
+  buildProjectedCurve, buildPlannedTimeline,
+  generateQuarters, daysBetween, depthAtTime, dateAtDepth, MS_DAY,
 } from "./engine/projection.js";
 import { revbDaily, revbStatus, revbMilestones, revbMonthly } from "./engine/revb.js";
 import { WINDOWS, STATS, scenarioStats, rollingRate, constantRatePoints } from "./engine/stats.js";
@@ -33,10 +33,10 @@ const statLabel = id => {
 };
 
 const TABS = [
+  { id: "revb", l: "Rev-B" },
   { id: "schedule", l: "Schedule" },
   { id: "scurve", l: "S-Curve" },
   { id: "gantt", l: "Gantt" },
-  { id: "revb", l: "Rev-B" },
   { id: "scenarios", l: "Scenarios" },
 ];
 
@@ -48,7 +48,7 @@ export default function App() {
     return r;
   });
   const [rateMode, setRateMode] = useState("geology");
-  const [rightTab, setRightTab] = useState("schedule");
+  const [rightTab, setRightTab] = useState("revb");
   const [hoveredFm, setHoveredFm] = useState(null);
   const [depthOverrides, setDepthOverrides] = useState({ VS7: null, VS8: null });
 
@@ -61,6 +61,8 @@ export default function App() {
   const defaultDepth = shaft.actual[shaft.actual.length - 1].depth;
   const curDepth = depthOverrides[activeShaft] ?? defaultDepth;
 
+  const resetDepth = useCallback(() => setDepthOverrides(p => ({ ...p, [activeShaft]: null })), [activeShaft]);
+
   const handleDepthChange = useCallback((val) => {
     const v = parseFloat(val);
     if (!isNaN(v) && v >= 0 && v <= SHAFTS[activeShaft].finalDepth) {
@@ -68,13 +70,19 @@ export default function App() {
     }
   }, [activeShaft]);
 
+  // Quarterly rates start at the current quarter; more quarters can be added per shaft.
   const [timelineRates, setTimelineRates] = useState(() => {
-    const qs = generateQuarters(new Date(2026, 3, 1), 8);
+    const qs = generateQuarters(today, 8);
     return {
       VS7: qs.map(q => ({ ...q, rate: 0.60 })),
       VS8: qs.map(q => ({ ...q, rate: 0.75 })),
     };
   });
+  const addQuarter = useCallback(sk => setTimelineRates(p => {
+    const last = p[sk].at(-1);
+    const [next] = generateQuarters(new Date(last.end.getFullYear(), last.end.getMonth() + 1, 1), 1);
+    return { ...p, [sk]: [...p[sk], { ...next, rate: last.rate }] };
+  }), []);
 
   // Stats mode: a constant rate taken from the shaft's monthly history (window + statistic).
   const [statsChoice, setStatsChoice] = useState({
@@ -138,28 +146,37 @@ export default function App() {
   const ptdDays = daysBetween(shaft.mainSinkStart, today);
   const ptdRate = ((curDepth - shaft.preSink) / ptdDays).toFixed(3);
 
+  // Rev-B baseline comparison. Status uses the workbook's own daily actuals; forecasts use projPts.
+  const revb = REVB[activeShaft];
+  const revbRows = useMemo(() => revbDaily(revb), [revb]);
+  const revbPts = useMemo(() => revbRows.map(d => ({ date: d.date, depth: d.revb })), [revbRows]);
+  // Position against Rev-B at the current (possibly what-if) depth, used by the header and S-curve.
+  const revbGap = useMemo(() => {
+    const revbDepth = depthAtTime(revbPts, today.getTime()) ?? revbPts.at(-1).depth;
+    const reached = dateAtDepth(revbPts, curDepth);
+    return { revbDepth, variance: curDepth - revbDepth, daysBehind: reached != null ? daysBetween(new Date(reached), today) : null };
+  }, [revbPts, curDepth, today]);
+
   const scurveData = useMemo(() => {
     const actualPts = shaft.actual.map(a => ({ date: a.date.getTime(), depth: a.depth }));
-    const planned = buildPlannedCurve(shaft, rates);
+    const readings = new Map(actualPts.map(p => [p.date, p.depth]));
     const all = new Set();
-    [actualPts, planned, projPts].forEach(a => a.forEach(p => all.add(p.date)));
+    [actualPts, revbPts, projPts].forEach(a => a.forEach(p => all.add(p.date)));
     return [...all].sort((a, b) => a - b).map(t => ({
       time: t,
-      planned: depthAtTime(planned, t),
-      actual: depthAtTime(actualPts, t),
+      revb: depthAtTime(revbPts, t),
+      actual: readings.get(t) ?? null, // only at readings, so the line's dots mark them
       projected: depthAtTime(projPts, t),
     }));
-  }, [shaft, rates, projPts]);
+  }, [shaft, revbPts, projPts]);
 
   const ganttPlanned = useMemo(() => buildPlannedTimeline(shaft, rates), [shaft, rates]);
-  const ganttProjection = useMemo(
+  // Formation-by-formation projection for the active rate mode (Schedule table and Gantt).
+  const modeProjection = useMemo(
     () => curvePts ? computeTimelineFormations(shaft, curvePts, curDepth) : projection,
     [curvePts, shaft, curDepth, projection],
   );
 
-  // Rev-B baseline comparison. Status uses the workbook's own daily actuals; forecasts use projPts.
-  const revb = REVB[activeShaft];
-  const revbRows = useMemo(() => revbDaily(revb), [revb]);
   const revbSt = useMemo(() => revbStatus(revb, revbRows), [revb, revbRows]);
   const revbMs = useMemo(
     () => revbMilestones(revb, revbRows, projPts, revbSt.actual, revbSt.asOf),
@@ -175,7 +192,6 @@ export default function App() {
     };
   }, [revbRows, revbSt]);
   const revbChartData = useMemo(() => {
-    const revbPts = revbRows.map(d => ({ date: d.date, depth: d.revb }));
     const actualPts = revbRows.filter(d => d.actual != null).map(d => ({ date: d.date, depth: d.actual }));
     const all = new Set(revbRows.map(d => d.date));
     projPts.forEach(p => all.add(p.date));
@@ -185,7 +201,7 @@ export default function App() {
       actual: depthAtTime(actualPts, t),
       projected: depthAtTime(projPts, t),
     }));
-  }, [revbRows, projPts]);
+  }, [revbRows, revbPts, projPts]);
 
   const handleRate = useCallback((id, val) => {
     const v = parseFloat(val);
@@ -199,20 +215,6 @@ export default function App() {
     }
   }, []);
 
-  const plannedAtToday = useMemo(() => {
-    const c = buildPlannedCurve(shaft, rates);
-    const t = today.getTime();
-    for (let i = 0; i < c.length - 1; i++) {
-      if (t >= c[i].date && t <= c[i + 1].date) {
-        const f = (t - c[i].date) / (c[i + 1].date - c[i].date);
-        return c[i].depth + f * (c[i + 1].depth - c[i].depth);
-      }
-    }
-    return c[c.length - 1].depth;
-  }, [shaft, rates, today]);
-
-  const variance = curDepth - plannedAtToday;
-
   return (
     <div style={{ fontFamily: "Arial,sans-serif", background: "#f3f3f3", height: "100vh", minHeight: 640, display: "flex", flexDirection: "column" }}>
       <PatternDefs />
@@ -221,13 +223,18 @@ export default function App() {
         activeShaft={activeShaft}
         setActiveShaft={setActiveShaft}
         shaft={shaft}
+        asOf={today}
         curDepth={curDepth}
+        actualDepth={defaultDepth}
+        overridden={depthOverrides[activeShaft] !== null}
+        resetDepth={resetDepth}
         totalRemaining={totalRemaining}
         pctComplete={pctComplete}
         weightedRate={weightedRate}
         projDays={projDays}
         projEnd={projEnd}
-        revbStatus={revbSt}
+        modeLabel={modeLabel}
+        revbGap={revbGap}
       />
 
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
@@ -254,6 +261,8 @@ export default function App() {
           handleRate={handleRate}
           timelineRates={timelineRates}
           handleTimelineRate={handleTimelineRate}
+          addQuarter={addQuarter}
+          curveReachesFinal={!curvePts || curvePts.at(-1).depth >= shaft.finalDepth}
           setHoveredFm={setHoveredFm}
           stats={shaftStats}
           choice={choice}
@@ -267,7 +276,7 @@ export default function App() {
                 key={t.id}
                 onClick={() => setRightTab(t.id)}
                 style={{
-                  padding: "6px 14px", border: "none", cursor: "pointer", fontSize: 10, fontWeight: 700,
+                  padding: "8px 16px", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
                   background: rightTab === t.id ? "#163D4C" : "transparent",
                   color: rightTab === t.id ? "#fff" : "#163D4C",
                   borderRadius: "4px 4px 0 0", textTransform: "uppercase", letterSpacing: 0.3,
@@ -279,7 +288,9 @@ export default function App() {
             {rightTab === "schedule" && (
               <ScheduleTable
                 shaft={shaft}
-                projection={projection}
+                projection={modeProjection}
+                modeLabel={modeLabel}
+                revbPts={revbPts}
                 today={today}
                 projEnd={projEnd}
                 projDays={projDays}
@@ -295,8 +306,7 @@ export default function App() {
                 modeLabel={modeLabel}
                 today={today}
                 curDepth={curDepth}
-                variance={variance}
-                plannedAtToday={plannedAtToday}
+                revbGap={revbGap}
                 ptdDays={ptdDays}
                 ptdRate={ptdRate}
               />
@@ -305,7 +315,7 @@ export default function App() {
               <GanttTimeline
                 shaft={shaft}
                 ganttPlanned={ganttPlanned}
-                projection={ganttProjection}
+                projection={modeProjection}
                 modeLabel={modeLabel}
                 today={today}
                 projEnd={projEnd}
