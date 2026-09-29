@@ -13,6 +13,8 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 - **`src/engine/actuals.js`** — `mergeActuals` builds each shaft's readings (workbook month-ends + latest reading, plus the `progression.js` rows outside the workbook's range; the workbook wins where both exist); `extendDaily` adds newer hand readings to the Rev-B daily series so every view shares one as-of date.
 - **`src/engine/revb.js`** — pure Rev-B comparisons: `revbDaily`, `revbStatus`, `revbMilestones` (slip per milestone, forecasts, and per-stage rate reconciliation), `revbMonthly`.
 - **`src/engine/stats.js`** — rate statistics from past performance: `monthlyHistory`, `rateStats`, `scenarioStats` (per window), `rollingRate`, `constantRatePoints`. Drives the Stats rate mode and the Scenarios tab.
+- **`scripts/build-single.mjs`** — `npm run build:single`; the app as one offline HTML file in `dist-single/` (gitignored).
+- **`docs/UPDATING.md`** — the user-facing update guide; keep it in step with any change to the update flow, file names or import messages.
 - **`scripts/import-revb.mjs`** — `npm run import:revb -- <workbook.xlsx>`; reads sheets `VS7 Rev-B`, `VS8 Rev-B`, `Rev-B Tables`, locating columns by header text.
 - **`src/settings.js`** — remembers the viewer's choices in `localStorage` (key `avma-visualiser:settings:v1`) and validates everything read back. Stored: shaft, tab, rate mode, geology rates, scenario choice, Timeline quarter rates (by label). What-if depths are deliberately not stored.
 - **`src/components/`** — presentation only. State lives in `App.jsx` and is passed down.

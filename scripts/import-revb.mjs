@@ -52,14 +52,27 @@ function readDaily(wb, shaft) {
     act: "Actual Shaft Depth",
   });
   const daily = [];
+  // A formula with no stored result means the file was saved without calculating (not by Excel).
+  // Reading it would silently drop rows, so stop instead.
+  const uncalculated = cell => {
+    const v = cell?.value;
+    return v && typeof v === "object" && ("formula" in v || "sharedFormula" in v) && v.result === undefined;
+  };
+  let missing = 0;
   for (let r = headerRow + 1; r <= ws.rowCount; r++) {
     const row = ws.getRow(r);
+    // Only date and schedule depth: actual depth is legitimately blank for days after the latest log entry.
+    for (const c of [cols.date, cols.sch]) if (uncalculated(row.getCell(c))) missing++;
     const date = iso(val(row.getCell(cols.date)));
     const sch = num(val(row.getCell(cols.sch)));
     if (!date || sch == null) continue;
     const act = num(val(row.getCell(cols.act)));
     // The workbook stores depths as negative metres below collar.
     daily.push([date, round(Math.abs(sch), 2), act == null ? null : round(Math.abs(act), 2)]);
+  }
+  if (missing) {
+    throw new Error(`${ws.name}: ${missing} formula cell(s) have no stored value, so the file was saved without ` +
+      "calculating. Open it in Excel, save it again, and re-run the import.");
   }
   return daily;
 }
@@ -128,6 +141,10 @@ const tables = readTaskTables(wb);
 const REVB = {};
 for (const s of SHAFTS) {
   const daily = readDaily(wb, s);
+  if (!daily.length) {
+    throw new Error(`${s} Rev-B: no rows with a date and a Schedule Cumulative Depth. If the workbook was saved ` +
+      "by something other than Excel, open it in Excel and save it again so the formula values are stored.");
+  }
   const lastActual = daily.filter(d => d[2] != null).at(-1);
   REVB[s] = { ...tables[s], asOf: lastActual?.[0] ?? null, daily };
   console.log(`${s}: ${daily.length} days (${daily[0][0]} to ${daily.at(-1)[0]}), ` +

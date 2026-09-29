@@ -20,34 +20,26 @@ npm run preview
 
 ## Updating the data
 
-The Rev-B tracking workbook is the single source for actual depths: the app takes each month-end
-depth and the latest reading from its daily actuals.
+**Step-by-step guide: [docs/UPDATING.md](docs/UPDATING.md).**
 
-**Each update** (weekly, month-end, or whenever you have a new copy of the workbook):
+In short, the Rev-B tracking workbook is the single source of actual depths:
 
 ```bash
-npm run import:revb -- "path/to/Rev-B_Tracking.xlsx"
+npm run import:revb -- "path/to/Rev-B_Tracking.xlsx"   # every update
+npm run build:single                                    # optional: one-file copy to share
 ```
 
-This rewrites `src/data/revb.js`. It needs the sheets `VS7 Rev-B`, `VS8 Rev-B` and `Rev-B Tables`;
-columns are found by their header names. Commit the result. That's the whole update.
-
-**Only when needed:**
-
-- **A formation boundary was crossed** — edit `src/data/shafts.js`: add `aFin: new Date(YYYY, M, D)`
-  to the formation just exited and `aStart: new Date(YYYY, M, D)` to the one entered (months are
-  0-indexed, Jan = 0). If it was met at a different depth than modelled, adjust `to`/`from` too.
-- **You have a newer reading than the workbook** (e.g. figures by message before the next copy) —
-  add it to `src/data/progression.js` as `{ date: new Date(YYYY, M, D), depth: XXX.X }`. It's used
-  until an imported workbook covers that date; the import then tells you the row can be deleted.
-
-`progression.js` otherwise only holds history from before the workbook's first actual reading.
+Only occasionally: add formation transition dates in `src/data/shafts.js`, or a reading newer than
+the workbook in `src/data/progression.js`.
 
 ## Project layout
 
 ```
+docs/
+└── UPDATING.md            How to update the data
 scripts/
-└── import-revb.mjs        Rev-B workbook → src/data/revb.js
+├── import-revb.mjs        Rev-B workbook → src/data/revb.js
+└── build-single.mjs       One-file offline copy → dist-single/
 src/
 ├── data/
 │   ├── shafts.js          VS7/VS8 specs + formations + lithology colours
