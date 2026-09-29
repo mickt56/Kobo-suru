@@ -1,0 +1,36 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, sans-serif; background: #f3f3f3; }
+input[type="number"] { font-family: Arial, sans-serif; }
+input[type="range"] { cursor: pointer; }
+button { font-family: Arial, sans-serif; }
+
+/* Visible keyboard focus (mouse clicks don't trigger :focus-visible on buttons). */
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid #F5B216;
+  outline-offset: 2px;
+}
+
+/* Print / save as PDF: A4 landscape, current shaft and tab only, full content (no scroll areas).
+   `html.printing` is set by the Print button just before printing so charts can resize first;
+   the @media print block covers Ctrl+P as well. */
+.print-only { display: none; }
+@page { size: A4 landscape; margin: 10mm; }
+
+html.printing body { width: 1040px; background: #fff; }
+html.printing .no-print { display: none !important; }
+html.printing .print-only { display: block !important; }
+html.printing .app-root { height: auto !important; min-height: 0 !important; }
+html.printing .tab-pane { overflow: visible !important; flex: none !important; }
+html.printing .print-chart { flex: none !important; height: 400px !important; min-height: 0 !important; }
+
+@media print {
+  body { background: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  .app-root { height: auto !important; min-height: 0 !important; }
+  .tab-pane { overflow: visible !important; flex: none !important; }
+  .print-chart { flex: none !important; height: 400px !important; min-height: 0 !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+}
