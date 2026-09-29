@@ -64,7 +64,7 @@ export default function KPIBar({
         )}
         <Kpi label="Remaining" value={`${totalRemaining.toFixed(1)}m`} />
         <Kpi label="Complete" value={`${pctComplete}%`} color={GOLD} />
-        <Kpi label="Wtd rate" value={`${weightedRate.toFixed(2)} m/d`} />
+        <Kpi label="Wtd rate" value={weightedRate > 0 ? `${weightedRate.toFixed(2)} m/d` : "—"} />
         <Kpi label="Days left" value={`${projDays}`} color={GOLD} />
         <Kpi label="Projected end" value={projEnd ? fmtDate(projEnd) : "Extend qtrs"} color={GOLD} sub={modeLabel} />
         <Kpi

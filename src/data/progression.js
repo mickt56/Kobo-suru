@@ -1,49 +1,25 @@
+// Hand-entered actual depths. Month-end depths and the latest reading normally come from the Rev-B
+// workbook's daily actuals (src/data/revb.js, via `npm run import:revb`); src/engine/actuals.js
+// merges the two. Only two kinds of row belong here:
+//   1. History before the workbook's first actual reading (VS7 22 May 2025, VS8 19 May 2025).
+//   2. A reading newer than the workbook's last actual, e.g. figures received before the next
+//      workbook. Once an imported workbook covers that date, its value is used and the row can go.
 const eom = (y, m) => new Date(y, m + 1, 0);
 
 export const VS7_ACTUAL = [
-  { date: new Date(2025, 2, 26), depth: 50.1 },
+  { date: new Date(2025, 2, 26), depth: 50.1 }, // main sink start
   { date: eom(2025, 3),  depth: 57.8 },
-  { date: eom(2025, 4),  depth: 61.5 },
-  { date: eom(2025, 5),  depth: 66.6 },
-  { date: eom(2025, 6),  depth: 81.2 },
-  { date: eom(2025, 7),  depth: 87.6 },
-  { date: eom(2025, 8),  depth: 102.0 },
-  { date: eom(2025, 9),  depth: 115.6 },
-  { date: eom(2025, 10), depth: 132.2 },
-  { date: eom(2025, 11), depth: 150.0 },
-  { date: eom(2026, 0),  depth: 169.1 },
-  { date: eom(2026, 1),  depth: 185.1 },
-  { date: eom(2026, 2),  depth: 206.4 },
-  { date: eom(2026, 3),  depth: 223.4 },
-  { date: eom(2026, 4),  depth: 242.9 },
-  { date: eom(2026, 5),  depth: 264.5 },
-  { date: eom(2026, 6),  depth: 280.9 },
-  { date: eom(2026, 7),  depth: 302.2 },
-  { date: new Date(2026, 8, 24), depth: 320.7 },
+  // May 2025 onwards: from the Rev-B workbook
+  { date: new Date(2026, 8, 28), depth: 323.8 }, // Sep 2026 MTD, ahead of the workbook (24 Sep)
 ];
 
 export const VS8_ACTUAL = [
-  { date: new Date(2024, 9, 23), depth: 46.8 },
+  { date: new Date(2024, 9, 23), depth: 46.8 }, // main sink start
   { date: eom(2024, 11), depth: 63.8 },
   { date: eom(2025, 0),  depth: 71.6 },
   { date: eom(2025, 1),  depth: 84.8 },
   { date: eom(2025, 2),  depth: 99.4 },
   { date: eom(2025, 3),  depth: 116.6 },
-  { date: eom(2025, 4),  depth: 128.4 },
-  { date: eom(2025, 5),  depth: 144.1 },
-  { date: eom(2025, 6),  depth: 165.3 },
-  { date: eom(2025, 7),  depth: 178.8 },
-  { date: eom(2025, 8),  depth: 205.8 },
-  { date: eom(2025, 9),  depth: 227.8 },
-  { date: eom(2025, 10), depth: 251.9 },
-  { date: eom(2025, 11), depth: 271.6 },
-  { date: eom(2026, 0),  depth: 292.6 },
-  { date: eom(2026, 1),  depth: 313.3 },
-  { date: eom(2026, 2),  depth: 334.4 },
-  { date: eom(2026, 3),  depth: 351.4 },
-  { date: eom(2026, 4),  depth: 377.0 },
-  { date: eom(2026, 5),  depth: 398.9 },
-  { date: eom(2026, 6),  depth: 424.7 },
-  { date: eom(2026, 7),  depth: 449.1 },
-  { date: new Date(2026, 8, 24), depth: 465.3 },
+  // May 2025 onwards: from the Rev-B workbook
+  { date: new Date(2026, 8, 28), depth: 473.2 }, // Sep 2026 MTD, ahead of the workbook (24 Sep)
 ];

@@ -72,7 +72,7 @@ export default function ScheduleTable({
                   {actDays ? <span style={{ fontWeight: 400, color: "#555", fontSize: 11 }}> ({actDays}d)</span> : ""}
                 </td>
                 <td style={cell}>{entry ? fmtDate(entry) : "—"}</td>
-                <td style={cell}>{exit ? fmtDate(exit) : "—"}</td>
+                <td style={cell}>{exit ? fmtDate(exit) : noDates ? <i style={{ color: "#555" }}>after last quarter</i> : "—"}</td>
                 <td style={{ ...cell, borderLeft: "1px solid #e8e8e8" }}>{revbExit ? fmtDate(revbExit) : "—"}</td>
                 <td style={{ ...num, fontWeight: 700, color: slip == null ? "#555" : slip > 0 ? RED_TEXT : GREEN }}>{slip == null ? "—" : signed(slip)}</td>
                 <td style={cell}>

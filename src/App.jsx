@@ -9,6 +9,7 @@ import {
   generateQuarters, daysBetween, depthAtTime, dateAtDepth, fmtDate, MS_DAY,
 } from "./engine/projection.js";
 import { revbDaily, revbStatus, revbMilestones, revbMonthly } from "./engine/revb.js";
+import { mergeActuals, extendDaily } from "./engine/actuals.js";
 import { WINDOWS, STATS, scenarioStats, rollingRate, constantRatePoints } from "./engine/stats.js";
 import {
   readSettings, writeSettings, clearSettings, pick,
@@ -25,9 +26,11 @@ import GanttTimeline from "./components/GanttTimeline.jsx";
 import RevBView from "./components/RevBView.jsx";
 import ScenarioView from "./components/ScenarioView.jsx";
 
+// Actual readings: the Rev-B workbook's month-ends and latest reading, plus hand-entered history
+// before it and any reading newer than it (see engine/actuals.js).
 const SHAFTS = {
-  VS7: { ...VS7, actual: VS7_ACTUAL },
-  VS8: { ...VS8, actual: VS8_ACTUAL },
+  VS7: { ...VS7, actual: mergeActuals(VS7_ACTUAL, revbDaily(REVB.VS7)) },
+  VS8: { ...VS8, actual: mergeActuals(VS8_ACTUAL, revbDaily(REVB.VS8)) },
 };
 
 // "median", "P25": word labels lower-cased for use mid-sentence, percentile labels kept as-is.
@@ -181,7 +184,9 @@ export default function App() {
 
   // Rev-B baseline comparison. Status uses the workbook's own daily actuals; forecasts use projPts.
   const revb = REVB[activeShaft];
-  const revbRows = useMemo(() => revbDaily(revb), [revb]);
+  // Daily Rev-B series, with any hand-entered reading newer than the workbook added, so the Rev-B
+  // tab reports as at the same date as the rest of the app.
+  const revbRows = useMemo(() => extendDaily(revbDaily(revb), shaft.actual), [revb, shaft]);
   const revbPts = useMemo(() => revbRows.map(d => ({ date: d.date, depth: d.revb })), [revbRows]);
   // Position against Rev-B at the current (possibly what-if) depth, used by the header and S-curve.
   const revbGap = useMemo(() => {
@@ -359,6 +364,7 @@ export default function App() {
                 ganttPlanned={ganttPlanned}
                 projection={modeProjection}
                 modeLabel={modeLabel}
+                horizon={curvePts && curvePts.at(-1).depth < shaft.finalDepth ? new Date(curvePts.at(-1).date) : null}
                 today={today}
                 projEnd={projEnd}
                 projDays={projDays}

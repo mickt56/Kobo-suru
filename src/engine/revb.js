@@ -11,10 +11,11 @@ export function revbDaily(revb) {
   return revb.daily.map(([d, sch, act]) => ({ date: parseISODate(d).getTime(), revb: sch, actual: act }));
 }
 
-// Position against Rev-B on the last day with an actual reading.
+// Position against Rev-B on the last day with an actual reading (which may be a hand-entered
+// reading newer than the workbook; see engine/actuals.js).
 export function revbStatus(revb, daily) {
-  const asOf = parseISODate(revb.asOf);
-  const row = daily.find(d => d.date === asOf.getTime());
+  const row = daily.filter(d => d.actual != null).at(-1);
+  const asOf = new Date(row.date);
   const reached = daily.find(d => d.revb >= row.actual - 1e-9);
   const sinks = revb.milestones.filter(m => m.metres);
   return {

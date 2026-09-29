@@ -156,3 +156,18 @@ ${body}
 };
 `);
 console.log(`Wrote ${path.relative(process.cwd(), OUT)}`);
+
+// progression.js only needs rows the workbook can't supply (see src/engine/actuals.js). Report any
+// hand-entered readings the workbook now covers, so they can be deleted.
+const progression = await import(path.join(path.dirname(OUT), "progression.js"));
+for (const s of SHAFTS) {
+  const acts = REVB[s].daily.filter(d => d[2] != null);
+  if (!acts.length) continue;
+  const [first, last] = [acts[0][0], acts.at(-1)[0]];
+  const localIso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const covered = (progression[`${s}_ACTUAL`] ?? []).filter(r => { const d = localIso(r.date); return d >= first && d <= last; });
+  if (covered.length) {
+    console.log(`${s}: the workbook now covers ${covered.length} hand-entered reading(s) in progression.js ` +
+      `(${covered.map(r => `${localIso(r.date)} ${r.depth}m`).join(", ")}); its values are used instead, so these rows can be deleted.`);
+  }
+}

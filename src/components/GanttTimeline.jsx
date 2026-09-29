@@ -5,16 +5,20 @@ import { MS_DAY, daysBetween, fmtDate, fmtShort } from "../engine/projection.js"
 const LABEL_W = 180, PLAN_TOP = "16%", PROJ_TOP = "52%", BAR_H = "30%";
 
 export default function GanttTimeline({
-  shaft, ganttPlanned, projection, modeLabel, today, projEnd, projDays, ptdDays, setHoveredFm,
+  shaft, ganttPlanned, projection, modeLabel, today, projEnd, projDays, ptdDays, setHoveredFm, horizon,
 }) {
+  // `horizon`: where the Timeline quarters run out before final depth (null otherwise).
   const ganttStart = shaft.mainSinkStart;
   const ends = [
     ...ganttPlanned.map(g => g.exitDate.getTime()),
     ...projection.formations.filter(f => f.exitDate).map(f => f.exitDate.getTime()),
+    ...(horizon ? [horizon.getTime()] : []),
   ];
-  const ganttEnd = new Date(Math.max(...ends) + 45 * MS_DAY);
+  const ganttEnd = new Date(Math.max(...ends) + (horizon ? 120 : 45) * MS_DAY);
   const ganttTotalDays = daysBetween(ganttStart, ganttEnd);
-  const todayPct = (daysBetween(ganttStart, today) / ganttTotalDays) * 100;
+  const pctOf = date => (daysBetween(ganttStart, date) / ganttTotalDays) * 100;
+  const todayPct = pctOf(today);
+  const horizonPct = horizon ? pctOf(horizon) : null;
 
   const ticks = [];
   let d = new Date(ganttStart.getFullYear(), Math.floor(ganttStart.getMonth() / 3) * 3, 1);
@@ -56,8 +60,11 @@ export default function GanttTimeline({
           const isC = pf?.status === "complete";
           const isA = pf?.status === "active";
           const hp = pf?.entryDate && pf?.exitDate;
-          const prs = hp ? (daysBetween(ganttStart, pf.entryDate) / ganttTotalDays) * 100 : 0;
-          const prw = hp ? (daysBetween(pf.entryDate, pf.exitDate) / ganttTotalDays) * 100 : 0;
+          const partial = !hp && pf?.entryDate && pf?.horizonDate; // quarters end inside this formation
+          const notReached = horizon && !isC && !pf?.entryDate;
+          const barEnd = hp ? pf.exitDate : partial ? pf.horizonDate : null;
+          const prs = barEnd ? pctOf(pf.entryDate) : 0;
+          const prw = barEnd ? pctOf(barEnd) - prs : 0;
           return (
             <div
               key={i}
@@ -74,6 +81,7 @@ export default function GanttTimeline({
               </div>
               <div style={{ flex: 1, position: "relative", height: "100%", background: i % 2 === 0 ? "#fafafa" : "#fff" }}>
                 <div style={{ position: "absolute", left: `${todayPct}%`, top: 0, bottom: 0, width: 1, background: "#E60033", zIndex: 5, opacity: 0.4 }} />
+                {horizon && <div style={{ position: "absolute", left: `${horizonPct}%`, top: 0, bottom: 0, borderLeft: "1.5px dashed #6d6d6d", zIndex: 5 }} />}
                 <div style={{ position: "absolute", left: `${ps}%`, width: `${pw}%`, top: PLAN_TOP, height: BAR_H, minHeight: 5, background: "#163D4C", opacity: 0.12, borderRadius: 2 }} />
                 {(isC || isA) && (
                   <svg style={{ position: "absolute", left: `${ps}%`, width: `${isC ? pw : Math.max(0, todayPct - ps)}%`, top: PLAN_TOP, height: BAR_H, minHeight: 5, borderRadius: 2, overflow: "hidden" }}>
@@ -94,6 +102,28 @@ export default function GanttTimeline({
                     }}>{pf.days.toFixed(0)}d</div>
                   </>
                 )}
+                {partial && !isC && (
+                  <>
+                    {/* Open-ended: the quarters stop before this formation is finished */}
+                    <div style={{
+                      position: "absolute", left: `${prs}%`, width: `${prw}%`, top: PROJ_TOP, height: BAR_H, minHeight: 5,
+                      background: `linear-gradient(to right, ${LITHO_COLORS[fm.code]} 70%, rgba(255,255,255,0.2))`,
+                      borderRadius: "2px 0 0 2px", border: "1px solid rgba(0,0,0,0.2)", borderRight: "2px dashed #6d6d6d",
+                      boxShadow: isA ? "0 0 0 1.5px #E60033" : "none",
+                    }} />
+                    {/* Label before the bar: the bar ends at the edge of the quarters, near the chart's right side */}
+                    <div style={{
+                      position: "absolute", right: `calc(${100 - prs}% + 6px)`, top: PROJ_TOP, height: BAR_H, minHeight: 5,
+                      display: "flex", alignItems: "center", fontSize: 11, fontWeight: 700, color: "#333", whiteSpace: "nowrap",
+                    }}>reaches {pf.horizonDepth}m by {fmtShort(pf.horizonDate)} →</div>
+                  </>
+                )}
+                {notReached && (
+                  <div style={{
+                    position: "absolute", right: `calc(${100 - horizonPct}% + 6px)`, top: PROJ_TOP, height: BAR_H, minHeight: 5,
+                    display: "flex", alignItems: "center", fontSize: 11, fontStyle: "italic", color: "#555", whiteSpace: "nowrap",
+                  }}>not reached by the last quarter</div>
+                )}
               </div>
             </div>
           );
@@ -104,6 +134,12 @@ export default function GanttTimeline({
             position: "absolute", left: `${todayPct}%`, transform: "translateX(-50%)",
             fontSize: 11, fontWeight: 700, color: "#C4002B", whiteSpace: "nowrap",
           }}>▼ {fmtDate(today)}</div>
+          {horizon && (
+            <div style={{
+              position: "absolute", left: `${horizonPct}%`, transform: "translateX(-50%)",
+              fontSize: 11, fontWeight: 700, color: "#444", whiteSpace: "nowrap",
+            }}>▲ End of quarters, {fmtDate(horizon)}</div>
+          )}
         </div>
       </div>
 

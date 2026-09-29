@@ -99,9 +99,12 @@ export function dateAtDepth(points, depth) {
 }
 
 // Formation entry/exit dates read off a timeline depth curve (from computeTimelineProjection).
-// Same row shape as computeProjection; formations beyond the last quarter get no dates.
+// Same row shape as computeProjection. If the curve ends (last quarter) inside a formation, that
+// formation has no exitDate; horizonDate / horizonDepth say how far it gets. Formations the curve
+// never reaches get no dates at all.
 export function computeTimelineFormations(shaft, points, curDepth) {
   const timeAt = depth => dateAtDepth(points, depth);
+  const horizon = points[points.length - 1];
   const formations = shaft.formations.map(fm => {
     const thick = fm.to - fm.from;
     if (fm.to <= curDepth) {
@@ -120,6 +123,8 @@ export function computeTimelineFormations(shaft, points, curDepth) {
       rate: days > 0 ? rem / days : 0,
       entryDate: start == null ? null : isActive && fm.aStart ? fm.aStart : new Date(start),
       exitDate: end == null ? null : new Date(end),
+      horizonDate: start != null && end == null && horizon.date > start ? new Date(horizon.date) : null,
+      horizonDepth: start != null && end == null ? Math.round(horizon.depth * 10) / 10 : null,
       status: isActive ? "active" : "pending",
     };
   });
