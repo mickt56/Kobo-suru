@@ -139,6 +139,7 @@ on A4 landscape; choose "Save as PDF" in the print dialog.
 | `… formula cell(s) have no stored value …` or `… no rows with a date and a Schedule Cumulative Depth` | The workbook was saved without calculating (e.g. by a tool other than Excel). Open it in Excel, save, and import again. |
 | Import fails with a file-lock error | Close the workbook in Excel and retry. |
 | The import's "actuals to …" date is older than expected | The daily sheets' **Actual Shaft Depth** column is linked to the shaft log workbooks (`VS7_ShaftLog` / `VS8_ShaftLog`). Open the Rev-B workbook with the shaft logs available, let Excel update the links, save, and import again. |
+| Rev-B mode lost some changed rates or durations after an import | They're remembered by milestone name, so a milestone renamed in the workbook's **Rev-B Tables** starts again from its Rev-B value. |
 | A date is a month out | Months count from 0 in `new Date(…)` (Oct = 9). |
 | App monthly figures differ from the workbook's **Rev-B Tables** monthly table | Expected: the app builds them from the daily sheets. That table is hand-entered, drifts up to ~3m, and had VS7/VS8 Jul–Aug 2026 actual advances crossed. |
 | Whole-project statistics or rolling rates differ from **Sched Summary** | Expected: the app uses actual days for the first month and depth change for rolling rates. The 6- and 3-month windows match. |

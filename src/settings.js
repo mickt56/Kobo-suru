@@ -57,6 +57,21 @@ export function restoreChoice(saved, defaults, windowIds, statIds) {
   return out;
 }
 
+// Rev-B stage adjustments per shaft, keyed by milestone name: {rate} for sinking stages, {days}
+// for events. Adjustments for milestones no longer in the workbook are dropped.
+const okDays = v => Number.isInteger(v) && v >= 0 && v <= 365;
+export function restoreRevbAdjust(saved, revb) {
+  const out = {};
+  for (const [shaft, r] of Object.entries(revb)) {
+    out[shaft] = {};
+    for (const m of r.milestones) {
+      const s = saved?.[shaft]?.[m.name];
+      if (m.metres ? okRate(s?.rate) : okDays(s?.days)) out[shaft][m.name] = m.metres ? { rate: s.rate } : { days: s.days };
+    }
+  }
+  return out;
+}
+
 // "Q3 2026" -> a sortable number.
 const quarterIndex = label => {
   const m = /^Q([1-4]) (\d{4})$/.exec(label ?? "");
