@@ -8,12 +8,12 @@ import {
   buildProjectedCurve, buildPlannedTimeline,
   generateQuarters, daysBetween, depthAtTime, dateAtDepth, fmtDate, MS_DAY,
 } from "./engine/projection.js";
-import { revbDaily, revbStatus, revbMilestones, revbMonthly } from "./engine/revb.js";
+import { revbDaily, revbStatus, revbMilestones, revbMonthly, revbPlan, achievedToDate } from "./engine/revb.js";
 import { mergeActuals, extendDaily } from "./engine/actuals.js";
 import { WINDOWS, STATS, scenarioStats, rollingRate, constantRatePoints } from "./engine/stats.js";
 import {
   readSettings, writeSettings, clearSettings, pick,
-  restoreRates, restoreChoice, restoreTimeline, serializeTimeline,
+  restoreRates, restoreChoice, restoreTimeline, serializeTimeline, restoreRevbAdjust,
 } from "./settings.js";
 
 import PatternDefs from "./components/PatternDefs.jsx";
@@ -25,6 +25,7 @@ import SCurve from "./components/SCurve.jsx";
 import GanttTimeline from "./components/GanttTimeline.jsx";
 import RevBView from "./components/RevBView.jsx";
 import ScenarioView from "./components/ScenarioView.jsx";
+import { scaledRate } from "./components/RevBStages.jsx";
 
 // Actual readings: the Rev-B workbook's month-ends and latest reading, plus hand-entered history
 // before it and any reading newer than it (see engine/actuals.js).
@@ -50,7 +51,8 @@ const TABS = [
 const DEFAULT_RATES = Object.fromEntries(RATE_GROUPS.map(g => [g.id, g.default]));
 const DEFAULT_CHOICE = { VS7: { window: "m3", stat: "median" }, VS8: { window: "m3", stat: "median" } };
 const DEFAULT_QUARTER_RATE = { VS7: 0.60, VS8: 0.75 };
-const RATE_MODES = ["geology", "timeline", "stats"];
+const RATE_MODES = ["geology", "timeline", "stats", "revb"];
+const NO_ADJUST = { VS7: {}, VS8: {} };
 
 // Projections run from the latest reporting date in the progression data.
 const TODAY = new Date(Math.max(...Object.values(SHAFTS).map(s => s.actual[s.actual.length - 1].date.getTime())));
@@ -91,12 +93,16 @@ export default function App() {
   const [statsChoice, setStatsChoice] = useState(() =>
     restoreChoice(saved.statsChoice, DEFAULT_CHOICE, WINDOWS.map(w => w.id), STATS.map(s => s.id)));
 
+  // Rev-B stages mode: the viewer's changes to the remaining Rev-B stage rates and event
+  // durations, per shaft, keyed by milestone name ({rate} or {days}).
+  const [revbAdjust, setRevbAdjust] = useState(() => restoreRevbAdjust(saved.revbAdjust, REVB));
+
   useEffect(() => {
     writeSettings({
       shaft: activeShaft, tab: rightTab, mode: rateMode, rates, statsChoice,
-      timeline: serializeTimeline(timelineRates),
+      timeline: serializeTimeline(timelineRates), revbAdjust,
     });
-  }, [activeShaft, rightTab, rateMode, rates, statsChoice, timelineRates]);
+  }, [activeShaft, rightTab, rateMode, rates, statsChoice, timelineRates, revbAdjust]);
 
   // Print: lay the page out at A4-landscape width first so the charts resize, then print.
   const printView = useCallback(() => {
@@ -123,6 +129,7 @@ export default function App() {
     setRates(DEFAULT_RATES);
     setStatsChoice(DEFAULT_CHOICE);
     setTimelineRates(restoreTimeline(null, TODAY, DEFAULT_QUARTER_RATE));
+    setRevbAdjust(NO_ADJUST);
     setDepthOverrides({ VS7: null, VS8: null });
   }, []);
   const shaftStats = useMemo(() => scenarioStats(shaft.actual), [shaft]);
@@ -133,8 +140,50 @@ export default function App() {
     setRateMode("stats");
   }, [activeShaft]);
 
+  // Rev-B baseline comparison. Status uses the workbook's own daily actuals; forecasts use projPts.
+  const revb = REVB[activeShaft];
+  // Daily Rev-B series, with any hand-entered reading newer than the workbook added, so the Rev-B
+  // tab reports as at the same date as the rest of the app.
+  const revbRows = useMemo(() => extendDaily(revbDaily(revb), shaft.actual), [revb, shaft]);
+
+  // The remaining Rev-B stages from the current depth, with the viewer's changes.
+  const plan = useMemo(
+    () => revbPlan(revb, revbAdjust[activeShaft], curDepth, today, shaft.finalDepth),
+    [revb, revbAdjust, activeShaft, curDepth, today, shaft],
+  );
+  const planAdjusted = plan.stages.some(s => (s.sink ? s.rate !== s.revRate : s.days !== s.revDays));
+  const achieved = useMemo(() => achievedToDate(revb, revbRows), [revb, revbRows]);
+  const adjustStage = useCallback((name, value) => setRevbAdjust(p => {
+    const shaftAdj = { ...p[activeShaft] };
+    if (value) shaftAdj[name] = value;
+    else delete shaftAdj[name];
+    return { ...p, [activeShaft]: shaftAdj };
+  }), [activeShaft]);
+  const setStageRate = useCallback((name, val) => {
+    const v = parseFloat(val);
+    const m = revb.milestones.find(x => x.name === name);
+    if (!isNaN(v) && v >= 0.05 && v <= 2.0) adjustStage(name, v === m.rate ? null : { rate: v });
+  }, [revb, adjustStage]);
+  const setEventDays = useCallback((name, val) => {
+    const v = Number(val);
+    const m = revb.milestones.find(x => x.name === name);
+    if (val !== "" && Number.isInteger(v) && v >= 0 && v <= 365) adjustStage(name, v === m.days ? null : { days: v });
+  }, [revb, adjustStage]);
+  // Sets every remaining sinking stage to a share of its Rev-B rate (1 = Rev-B); events keep theirs.
+  const scaleStages = useCallback(factor => setRevbAdjust(p => {
+    const shaftAdj = { ...p[activeShaft] };
+    plan.stages.filter(s => s.sink).forEach(s => {
+      const rate = scaledRate(s.revRate, factor);
+      if (rate === s.revRate) delete shaftAdj[s.name];
+      else shaftAdj[s.name] = { rate };
+    });
+    return { ...p, [activeShaft]: shaftAdj };
+  }), [activeShaft, plan]);
+  const resetStages = useCallback(() => setRevbAdjust(p => ({ ...p, [activeShaft]: {} })), [activeShaft]);
+
   const modeLabel = rateMode === "geology" ? "geology rates"
     : rateMode === "timeline" ? "quarterly rates"
+    : rateMode === "revb" ? (planAdjusted ? "adjusted Rev-B stages" : "Rev-B stage rates")
     : `${WINDOWS.find(w => w.id === choice.window).short} ${statLabel(choice.stat)}, ${statsRate.toFixed(2)} m/d`;
 
   const projection = useMemo(
@@ -145,12 +194,13 @@ export default function App() {
   const totalRemaining = shaft.finalDepth - curDepth;
   const pctComplete = ((curDepth / shaft.finalDepth) * 100).toFixed(1);
 
-  // Calendar-driven depth curve for Timeline and Stats modes (null in Geology mode).
+  // Calendar-driven depth curve for Timeline, Stats and Rev-B stages modes (null in Geology mode).
   const curvePts = useMemo(
     () => rateMode === "timeline" ? computeTimelineProjection(shaft, timelineRates[activeShaft], curDepth, today)
       : rateMode === "stats" ? constantRatePoints(curDepth, today, statsRate, shaft.finalDepth)
+      : rateMode === "revb" ? plan.points
       : null,
-    [rateMode, shaft, timelineRates, activeShaft, curDepth, today, statsRate],
+    [rateMode, shaft, timelineRates, activeShaft, curDepth, today, statsRate, plan],
   );
 
   // Projected depth curve for the active rate mode.
@@ -182,11 +232,6 @@ export default function App() {
   const ptdDays = daysBetween(shaft.mainSinkStart, today);
   const ptdRate = ((curDepth - shaft.preSink) / ptdDays).toFixed(3);
 
-  // Rev-B baseline comparison. Status uses the workbook's own daily actuals; forecasts use projPts.
-  const revb = REVB[activeShaft];
-  // Daily Rev-B series, with any hand-entered reading newer than the workbook added, so the Rev-B
-  // tab reports as at the same date as the rest of the app.
-  const revbRows = useMemo(() => extendDaily(revbDaily(revb), shaft.actual), [revb, shaft]);
   const revbPts = useMemo(() => revbRows.map(d => ({ date: d.date, depth: d.revb })), [revbRows]);
   // Position against Rev-B at the current (possibly what-if) depth, used by the header and S-curve.
   const revbGap = useMemo(() => {
@@ -217,8 +262,8 @@ export default function App() {
 
   const revbSt = useMemo(() => revbStatus(revb, revbRows), [revb, revbRows]);
   const revbMs = useMemo(
-    () => revbMilestones(revb, revbRows, projPts, revbSt.actual, revbSt.asOf),
-    [revb, revbRows, projPts, revbSt],
+    () => revbMilestones(revb, revbRows, projPts, revbSt.actual, revbSt.asOf, rateMode === "revb" ? plan : null),
+    [revb, revbRows, projPts, revbSt, rateMode, plan],
   );
   const revbMonths = useMemo(() => revbMonthly(revbRows, revbSt.asOf), [revbRows, revbSt]);
   const perf = useMemo(() => {
@@ -307,6 +352,7 @@ export default function App() {
           choice={choice}
           applyScenario={applyScenario}
           resetSettings={resetSettings}
+          revbStages={{ plan, adjusted: planAdjusted, achieved, setStageRate, setEventDays, scaleStages, resetStages }}
         />
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
@@ -376,6 +422,7 @@ export default function App() {
               <RevBView
                 shaft={shaft}
                 modeLabel={modeLabel}
+                stagesMode={rateMode === "revb"}
                 status={revbSt}
                 milestones={revbMs}
                 monthly={revbMonths}

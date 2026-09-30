@@ -38,7 +38,7 @@ function StatusCell({ m }) {
   );
 }
 
-export default function RevBView({ shaft, modeLabel, status, milestones, monthly, chartData }) {
+export default function RevBView({ shaft, modeLabel, stagesMode, status, milestones, monthly, chartData }) {
   const lastSink = milestones.filter(m => m.sink).at(-1);
   const last = milestones.at(-1);
   const fcst = m => m.actualDate ?? m.forecastDate;
@@ -88,7 +88,9 @@ export default function RevBView({ shaft, modeLabel, status, milestones, monthly
           </div>
         ))}
         <div style={{ fontSize: 10, color: "#666", marginLeft: "auto" }}>
-          Forecasts use the projection at {modeLabel} plus the remaining Rev-B event durations
+          {stagesMode
+            ? <>Forecasts follow the {modeLabel}, events included</>
+            : <>Forecasts use the projection at {modeLabel} plus the remaining Rev-B event durations</>}
         </div>
       </div>
 

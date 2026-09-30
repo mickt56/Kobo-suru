@@ -3,6 +3,7 @@ import {
   addDays, daysBetween, fmtDate, fmtShort, getFormationAt, getRateKey, typeColor,
 } from "../engine/projection.js";
 import { WINDOWS, STATS } from "../engine/stats.js";
+import RevBStages from "./RevBStages.jsx";
 
 export default function RatesPanel({
   shaft, activeShaft, today, curDepth,
@@ -11,19 +12,20 @@ export default function RatesPanel({
   timelineRates, handleTimelineRate, addQuarter, curveReachesFinal,
   setHoveredFm,
   stats, choice, applyScenario, resetSettings,
+  revbStages,
 }) {
   const win = stats.windows[choice.window];
   return (
     <div className="no-print" style={{ width: 270, flexShrink: 0, background: "#fafafa", borderRight: "1px solid #ddd", padding: "10px 10px", overflowY: "auto" }}>
       <div style={{ display: "flex", gap: 2, marginBottom: 8 }}>
-        {[{ id: "geology", l: "Geology" }, { id: "timeline", l: "Timeline" }, { id: "stats", l: "Stats" }].map(m => (
+        {[{ id: "geology", l: "Geology" }, { id: "timeline", l: "Timeline" }, { id: "stats", l: "Stats" }, { id: "revb", l: "Rev-B" }].map(m => (
           <button
             key={m.id}
             onClick={() => setRateMode(m.id)}
             aria-pressed={rateMode === m.id}
             style={{
-              flex: 1, padding: "4px 0", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer",
-              fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.3,
+              flex: "1 1 auto", padding: "4px 3px", border: "1px solid #ccc", borderRadius: 3, cursor: "pointer",
+              fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.2,
               background: rateMode === m.id ? "#163D4C" : "#fff",
               color: rateMode === m.id ? "#fff" : "#163D4C",
             }}
@@ -195,6 +197,8 @@ export default function RatesPanel({
           </div>
         </>
       )}
+
+      {rateMode === "revb" && <RevBStages activeShaft={activeShaft} curDepth={curDepth} {...revbStages} />}
 
       <div style={{ marginTop: 14, paddingTop: 8, borderTop: "1px solid #e0e0e0", fontSize: 10, color: "#555", lineHeight: 1.4 }}>
         Your shaft, tab, rate mode and rates are remembered in this browser.{" "}
