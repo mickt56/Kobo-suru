@@ -76,6 +76,7 @@ reference/                 Original single-file prototype + handover doc
 ## Notes
 
 - Your shaft, tab, rate mode, rates and chosen scenario are remembered in the browser (what-if depths are not). "Reset all to defaults" at the bottom of the rates panel clears them.
+- The header shows a **Rolling rate** (actual advance over the last 30 or 90 days, toggled under it; smooths out month-start spikes) and a **Fcst rate** (the average rate the current projection needs to finish).
 - **Print / PDF** in the header prints the current shaft and tab on A4 or A3 landscape, chosen with the A4 / A3 buttons beside it (remembered). A3 prints about 20% larger for presentations. Choose "Save as PDF" in the print dialog for a file.
 - The app opens on the Rev-B tab. The header shows the data date and, when a depth is typed in, a what-if marker with the actual depth and a reset.
 - Projections run from the latest actual reading (currently 28 Sep 2026), so each import moves "today" forward automatically.

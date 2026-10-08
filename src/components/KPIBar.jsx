@@ -15,7 +15,7 @@ function Kpi({ label, value, color = "#fff", sub, labelStyle }) {
 
 export default function KPIBar({
   activeShaft, setActiveShaft, shaft, asOf, curDepth, actualDepth, overridden, resetDepth,
-  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap, onPrint, paper, setPaper,
+  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap, onPrint, paper, setPaper, rollingRate, rollWindow, setRollWindow,
 }) {
   const behind = revbGap.variance < 0;
   return (
@@ -78,9 +78,29 @@ export default function KPIBar({
         )}
         <Kpi label="Remaining" value={`${totalRemaining.toFixed(1)}m`} />
         <Kpi label="Complete" value={`${pctComplete}%`} color={GOLD} />
-        <Kpi label="Wtd rate" value={weightedRate > 0 ? `${weightedRate.toFixed(2)} m/d` : "—"} />
+        {/* Achieved: rolling 30 / 90 days of actual progress (smooths month-start spikes). */}
+        <div title={`Actual advance over the last ${rollWindow} days ÷ ${rollWindow}, from the daily readings`}>
+          <div style={LABEL}>Rolling rate</div>
+          <div style={{ color: "#fff", fontSize: 16, fontWeight: 700, lineHeight: 1.2, whiteSpace: "nowrap" }}>{rollingRate.toFixed(2)} m/d</div>
+          <div role="group" aria-label="Rolling rate window" style={{ display: "flex", gap: 2, marginTop: 1 }}>
+            {[30, 90].map(w => (
+              <button
+                key={w} onClick={() => setRollWindow(w)} aria-pressed={rollWindow === w}
+                style={{
+                  padding: "0 4px", fontSize: 10, lineHeight: "14px", borderRadius: 2, cursor: "pointer", fontWeight: 700,
+                  border: "1px solid rgba(255,255,255,0.5)",
+                  background: rollWindow === w ? "rgba(255,255,255,0.9)" : "transparent", color: rollWindow === w ? NAVY : "#fff",
+                }}
+              >{w}d</button>
+            ))}
+          </div>
+        </div>
+        <Kpi
+          label="Fcst rate" value={weightedRate > 0 ? `${weightedRate.toFixed(2)} m/d` : "—"}
+          sub="avg to finish"
+        />
         <Kpi label="Days left" value={`${projDays}`} color={GOLD} />
-        <Kpi label="Projected end" value={projEnd ? fmtDate(projEnd) : "Extend qtrs"} color={GOLD} sub={modeLabel} />
+        <Kpi label="Projected end" value={projEnd ? fmtDate(projEnd) : "Extend months"} color={GOLD} sub={modeLabel} />
         <Kpi
           label="vs Rev-B"
           value={`${behind ? "−" : "+"}${Math.abs(revbGap.variance).toFixed(1)}m`}

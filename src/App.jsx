@@ -14,7 +14,7 @@ import { forecastPeriods } from "./engine/periods.js";
 import { WINDOWS, STATS, scenarioStats, rollingRate, constantRatePoints } from "./engine/stats.js";
 import {
   readSettings, writeSettings, clearSettings, pick,
-  restoreRates, restoreChoice, restoreTimeline, serializeTimeline, restoreRevbAdjust, restorePeriodCount, PAPER_SIZES,
+  restoreRates, restoreChoice, restoreTimeline, serializeTimeline, restoreRevbAdjust, restorePeriodCount, PAPER_SIZES, ROLL_WINDOWS,
 } from "./settings.js";
 
 import PatternDefs from "./components/PatternDefs.jsx";
@@ -107,6 +107,8 @@ export default function App() {
   // Print paper size. The @page rule is written here (not in App.css) so the browser's print
   // dialog, and Ctrl+P, pick up the chosen size; html.paper-a3 widens the print layout.
   const [paper, setPaper] = useState(() => pick(saved.paper, PAPER_SIZES, "A4"));
+  // Header's achieved rate: rolling 30 or 90 days of actual progress.
+  const [rollWindow, setRollWindow] = useState(() => pick(saved.roll, ROLL_WINDOWS, 90));
   useEffect(() => {
     let tag = document.getElementById("page-size");
     if (!tag) {
@@ -129,9 +131,9 @@ export default function App() {
   useEffect(() => {
     writeSettings({
       shaft: activeShaft, tab: rightTab, mode: rateMode, rates, statsChoice,
-      timeline: serializeTimeline(timelineRates), revbAdjust, periods: periodCount, paper,
+      timeline: serializeTimeline(timelineRates), revbAdjust, periods: periodCount, paper, roll: rollWindow,
     });
-  }, [activeShaft, rightTab, rateMode, rates, statsChoice, timelineRates, revbAdjust, periodCount, paper]);
+  }, [activeShaft, rightTab, rateMode, rates, statsChoice, timelineRates, revbAdjust, periodCount, paper, rollWindow]);
 
   // Print: lay the page out at A4-landscape width first so the charts resize, then print.
   const printView = useCallback(() => {
@@ -161,6 +163,7 @@ export default function App() {
     setRevbAdjust(NO_ADJUST);
     setPeriodCount(DEFAULT_PERIODS);
     setPaper("A4");
+    setRollWindow(90);
     setDepthOverrides({ VS7: null, VS8: null });
   }, []);
   const shaftStats = STATS_BY[activeShaft];
@@ -327,6 +330,7 @@ export default function App() {
       sinceRevb: (revbSt.actual - act[0].actual) / daysBetween(new Date(act[0].date), revbSt.asOf),
       rolling180: rollingRate(revbRows, 180),
       rolling90: rollingRate(revbRows, 90),
+      rolling30: rollingRate(revbRows, 30),
     };
   }, [revbRows, revbSt]);
   const revbChartData = useMemo(() => {
@@ -376,6 +380,9 @@ export default function App() {
         onPrint={printView}
         paper={paper}
         setPaper={setPaper}
+        rollingRate={perf[`rolling${rollWindow}`]}
+        rollWindow={rollWindow}
+        setRollWindow={setRollWindow}
       />
 
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
