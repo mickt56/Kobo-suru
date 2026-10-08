@@ -11,6 +11,7 @@ export const VS7_ACTUAL = [
   { date: eom(2025, 3),  depth: 57.8 },
   // May 2025 onwards: from the Rev-B workbook
   { date: new Date(2026, 8, 28), depth: 323.8 }, // Sep 2026 MTD, ahead of the workbook (24 Sep)
+  { date: new Date(2026, 9, 7), depth: 329.9 },  // Sink Status plot 7 Oct 2026
 ];
 
 export const VS8_ACTUAL = [
@@ -22,4 +23,5 @@ export const VS8_ACTUAL = [
   { date: eom(2025, 3),  depth: 116.6 },
   // May 2025 onwards: from the Rev-B workbook
   { date: new Date(2026, 8, 28), depth: 473.2 }, // Sep 2026 MTD, ahead of the workbook (24 Sep)
+  { date: new Date(2026, 9, 7), depth: 477.3 },  // Sink Status plot 7 Oct 2026
 ];

@@ -4,12 +4,13 @@ import {
 } from "../engine/projection.js";
 import { WINDOWS, STATS } from "../engine/stats.js";
 import RevBStages from "./RevBStages.jsx";
+import MonthlyRates from "./MonthlyRates.jsx";
 
 export default function RatesPanel({
   shaft, activeShaft, today, curDepth,
   rateMode, setRateMode,
   rates, setRates, handleRate,
-  timelineRates, handleTimelineRate, addQuarter, curveReachesFinal,
+  timelineRates, handleTimelineRate, addMonths, applyRange, curveReachesFinal, periods,
   setHoveredFm,
   stats, choice, applyScenario, resetSettings,
   revbStages,
@@ -94,56 +95,11 @@ export default function RatesPanel({
       )}
 
       {rateMode === "timeline" && (
-        <>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#163D4C", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.4 }}>
-            {activeShaft} Quarterly Rates (m/day)
-          </div>
-          {timelineRates[activeShaft].map((q, i) => {
-            const depthAtQ = curDepth + timelineRates[activeShaft].slice(0, i).reduce((s, qq) => {
-              const es = qq.start > today ? qq.start : today;
-              return es >= qq.end ? s : s + qq.rate * daysBetween(es, qq.end);
-            }, 0);
-            const fm = getFormationAt(shaft, Math.min(shaft.finalDepth - 0.1, depthAtQ));
-            const done = depthAtQ >= shaft.finalDepth;
-            return (
-              <div key={i} style={{ marginBottom: 5, opacity: q.end < today || done ? 0.75 : 1 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1 }}>
-                  <div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#163D4C" }}>{q.label}</span>
-                    {fm && !done && <span style={{ fontSize: 10, color: "#666", marginLeft: 4 }}>~{fm.code}</span>}
-                    {done && <span style={{ fontSize: 10, color: "#2a7a2a", marginLeft: 4 }}>✓ Complete</span>}
-                  </div>
-                  <input
-                    type="number" step="0.01" min="0.10" max="2.00" value={q.rate} disabled={done}
-                    aria-label={`${q.label} rate, metres per day`}
-                    onChange={e => handleTimelineRate(activeShaft, i, e.target.value)}
-                    style={{ width: 44, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, fontSize: 11, fontWeight: 700, textAlign: "right", color: "#163D4C" }}
-                  />
-                </div>
-                {!done && (
-                  <input
-                    type="range" min="0.10" max="1.50" step="0.01" value={q.rate}
-                    aria-label={`${q.label} rate slider`}
-                    onChange={e => handleTimelineRate(activeShaft, i, e.target.value)}
-                    style={{ width: "100%", height: 3, accentColor: "#163D4C" }}
-                  />
-                )}
-              </div>
-            );
-          })}
-          {!curveReachesFinal && (
-            <div role="status" style={{ fontSize: 11, color: "#7a2e00", background: "#fff3e0", border: "1px solid #ffcc80", borderRadius: 3, padding: "4px 6px", margin: "4px 0" }}>
-              These quarters end before final depth. Add a quarter or raise the rates.
-            </div>
-          )}
-          <button
-            onClick={() => addQuarter(activeShaft)}
-            style={{ width: "100%", padding: "4px 0", marginTop: 2, border: "1px dashed #163D4C", borderRadius: 3, background: "#fff", color: "#163D4C", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
-          >+ Add quarter</button>
-          <div style={{ fontSize: 10, color: "#666", marginTop: 4, lineHeight: 1.4 }}>
-            Calendar-based rates, independent of formation boundaries. ~code shows expected formation at quarter start.
-          </div>
-        </>
+        <MonthlyRates
+          shaft={shaft} activeShaft={activeShaft} today={today} curDepth={curDepth}
+          months={timelineRates[activeShaft]} handleTimelineRate={handleTimelineRate}
+          addMonths={addMonths} applyRange={applyRange} curveReachesFinal={curveReachesFinal} periods={periods}
+        />
       )}
 
       {rateMode === "stats" && (
