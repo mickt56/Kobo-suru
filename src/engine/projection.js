@@ -54,11 +54,13 @@ export function computeProjection(shaft, rates, curDepth, today) {
   return { formations: results, totalDays: Math.round(daysBetween(today, runDate)), completionDate: runDate };
 }
 
-export function computeTimelineProjection(shaft, quarters, curDepth, today) {
+// Depth curve from per-period rates ([{start, end, rate}], e.g. from generateMonths) starting at
+// `curDepth` on `today`. Stops at final depth, or where the periods run out.
+export function computeTimelineProjection(shaft, periods, curDepth, today) {
   let depth = curDepth;
   let date = new Date(today);
   const points = [{ date: date.getTime(), depth }];
-  for (const q of quarters) {
+  for (const q of periods) {
     if (depth >= shaft.finalDepth) break;
     const effectiveStart = date > q.start ? date : q.start;
     if (effectiveStart >= q.end) continue;
@@ -99,7 +101,7 @@ export function dateAtDepth(points, depth) {
 }
 
 // Formation entry/exit dates read off a timeline depth curve (from computeTimelineProjection).
-// Same row shape as computeProjection. If the curve ends (last quarter) inside a formation, that
+// Same row shape as computeProjection. If the curve ends (last month) inside a formation, that
 // formation has no exitDate; horizonDate / horizonDepth say how far it gets. Formations the curve
 // never reaches get no dates at all.
 export function computeTimelineFormations(shaft, points, curDepth) {
@@ -171,20 +173,20 @@ export function buildPlannedTimeline(shaft, rates) {
   return bars;
 }
 
-export function generateQuarters(startDate, count) {
-  const qs = [];
-  const y = startDate.getFullYear();
-  const m = Math.floor(startDate.getMonth() / 3) * 3;
+// Calendar months from the month containing `startDate`. `end` is the first day of the next month
+// (exclusive), so consecutive months join without a gap. `key` ("2026-10") identifies a month in
+// saved settings; `label` ("Oct 26") is for display.
+export function generateMonths(startDate, count, rate = 0.65) {
+  const out = [];
   for (let i = 0; i < count; i++) {
-    const qm = m + i * 3;
-    const qy = y + Math.floor(qm / 12);
-    const qmn = qm % 12;
-    qs.push({
-      label: `Q${Math.floor(qmn / 3) + 1} ${qy}`,
-      start: new Date(qy, qmn, 1),
-      end: new Date(qy, qmn + 3, 0),
-      rate: 0.65,
+    const start = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+    out.push({
+      key: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}`,
+      label: fmtShort(start).replace("'", ""),
+      start,
+      end: new Date(start.getFullYear(), start.getMonth() + 1, 1),
+      rate,
     });
   }
-  return qs;
+  return out;
 }

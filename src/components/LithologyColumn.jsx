@@ -1,9 +1,11 @@
 import { LITHO_COLORS, DARK_CODES } from "../data/shafts.js";
 import useElementHeight from "./useElementHeight.js";
+import { PERIOD_COUNTS } from "../settings.js";
+import { fmtDate } from "../engine/projection.js";
 
 export default function LithologyColumn({
   shaft, activeShaft, curDepth, depthOverrides, setDepthOverrides,
-  handleDepthChange, hoveredFm, setHoveredFm,
+  handleDepthChange, hoveredFm, setHoveredFm, periods, periodCount, setPeriodCount,
 }) {
   // The column stretches to the available height; 2px allows for its border.
   const [colRef, colH] = useElementHeight();
@@ -29,6 +31,16 @@ export default function LithologyColumn({
             style={{ fontSize: 10, color: "#E60033", background: "none", border: "none", cursor: "pointer", padding: 0 }}
           >↺</button>
         )}
+      </div>
+
+      <div style={{ marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
+        <label htmlFor="period-count" style={{ fontSize: 10, color: "#666" }}>Forecast months:</label>
+        <select
+          id="period-count" value={periodCount} onChange={e => setPeriodCount(+e.target.value)}
+          style={{ fontSize: 11, padding: "1px 2px", border: "1px solid #ccc", borderRadius: 3, color: "#163D4C", fontWeight: 600 }}
+        >
+          {PERIOD_COUNTS.map(n => <option key={n} value={n}>{n === 0 ? "Off" : n}</option>)}
+        </select>
       </div>
 
       <div ref={colRef} style={{ display: "flex", gap: 0, flex: 1, minHeight: 240 }}>
@@ -76,7 +88,7 @@ export default function LithologyColumn({
             const mined = (fm.from + fm.to) / 2 < curDepth;
             return (
               <div key={`l${i}`} style={{
-                position: "absolute", top: fm.from * px, left: 0, right: 0, height: h, zIndex: 5, pointerEvents: "none",
+                position: "absolute", top: fm.from * px, left: 0, right: periods.length ? 14 : 0, height: h, zIndex: 5, pointerEvents: "none",
                 display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "0 3px", overflow: "hidden",
               }}>
                 <span style={{
@@ -92,7 +104,18 @@ export default function LithologyColumn({
               fontSize: 10, fontWeight: 800, color: "#333", letterSpacing: 2, zIndex: 5, pointerEvents: "none",
             }}>▲ MINED</div>
           )}
-          <div style={{ position: "absolute", top: curDepth * px - 1, left: 0, right: 0, height: 2, background: "#E60033", zIndex: 6 }} />
+          {/* Forecast period bands: one colour per month ahead, down the right edge of the shaft */}
+          {periods.map(p => (
+            <div
+              key={p.key}
+              title={`${p.label}${p.partial ? ` (from ${fmtDate(p.start)})` : ""}: ${p.from.toFixed(1)}–${p.to.toFixed(1)}m, ${p.metres.toFixed(1)}m at ${p.rate.toFixed(2)} m/d`}
+              style={{
+                position: "absolute", top: p.from * px, right: 0, width: 14, height: Math.max(1.5, (p.to - p.from) * px),
+                background: p.color, zIndex: 7, borderTop: "1px solid rgba(255,255,255,0.8)",
+              }}
+            />
+          ))}
+          <div style={{ position: "absolute", top: curDepth * px - 1, left: 0, right: 0, height: 2, background: "#E60033", zIndex: 8 }} />
           {shaft.standOff && (
             <div style={{ position: "absolute", top: shaft.standOff * px, left: 0, right: 0, height: 0, zIndex: 3, borderTop: "1.5px dashed #F5B216" }} />
           )}
@@ -107,6 +130,10 @@ export default function LithologyColumn({
           { key: <svg width="10" height="10"><rect width="10" height="10" fill="url(#mH)" stroke="#999" strokeWidth="0.5" rx="1" /></svg>, l: "Mined" },
           { key: <div style={{ width: 10, height: 2, background: "#E60033", borderRadius: 1 }} />, l: "Current" },
           { key: <div style={{ width: 10, height: 0, borderTop: "1.5px dashed #F5B216" }} />, l: "Stand-off" },
+          ...(periods.length ? [{
+            key: <div style={{ width: 10, height: 10, borderRadius: 1, background: `linear-gradient(${periods.map(p => p.color).join(",")})` }} />,
+            l: `Next ${periods.length} month${periods.length > 1 ? "s" : ""}`,
+          }] : []),
         ].map(item => (
           <span key={item.l} style={{ display: "inline-flex", alignItems: "center", gap: 3, whiteSpace: "nowrap" }}>{item.key}{item.l}</span>
         ))}

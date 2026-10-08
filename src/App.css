@@ -10,18 +10,24 @@ button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
   outline-offset: 2px;
 }
 
-/* Print / save as PDF: A4 landscape, current shaft and tab only, full content (no scroll areas).
+/* Print / save as PDF: A4 or A3 landscape, current shaft and tab only, full content (no scroll areas).
    `html.printing` is set by the Print button just before printing so charts can resize first;
-   the @media print block covers Ctrl+P as well. */
+   the @media print block covers Ctrl+P as well. The paper size comes from the header's A4 / A3
+   choice: App sets `html.paper-a3` and writes the matching @page rule (see usePaperSize in App).
+   A3 lays out at 1240px and is zoomed ×1.215 to fill the 400 mm printable width, so text prints
+   ~20% larger than on A4 and charts get more room. `.print-fill` blocks (the Gantt) take the page height. */
 .print-only { display: none; }
-@page { size: A4 landscape; margin: 10mm; }
 
 html.printing body { width: 1040px; background: #fff; }
+html.printing.paper-a3 body { width: 1240px; zoom: 1.215; }
 html.printing .no-print { display: none !important; }
 html.printing .print-only { display: block !important; }
 html.printing .app-root { height: auto !important; min-height: 0 !important; }
 html.printing .tab-pane { overflow: visible !important; flex: none !important; }
 html.printing .print-chart { flex: none !important; height: 400px !important; min-height: 0 !important; }
+html.printing.paper-a3 .print-chart { height: 560px !important; }
+html.printing .print-fill { flex: none !important; height: 560px !important; }
+html.printing.paper-a3 .print-fill { height: 690px !important; }
 
 @media print {
   body { background: #fff; }
@@ -31,6 +37,7 @@ html.printing .print-chart { flex: none !important; height: 400px !important; mi
   .app-root { height: auto !important; min-height: 0 !important; }
   .tab-pane { overflow: visible !important; flex: none !important; }
   .print-chart { flex: none !important; height: 400px !important; min-height: 0 !important; }
+  html.paper-a3 .print-chart { height: 560px !important; }
   table { page-break-inside: auto; }
   tr { page-break-inside: avoid; }
 }

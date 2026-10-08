@@ -36,7 +36,7 @@ export default function ScheduleTable({
           {projection.formations.map((fm, i) => {
             const isA = fm.status === "active";
             const isC = fm.status === "complete";
-            const noDates = !isC && !fm.exitDate; // beyond the end of the Timeline quarters
+            const noDates = !isC && !fm.exitDate; // beyond the end of the Timeline months
             const origFm = shaft.formations.find(f => f.code === fm.code);
             const hasActual = origFm?.aStart && origFm?.aFin;
             const actDays = hasActual ? daysBetween(origFm.aStart, origFm.aFin) : null;
@@ -72,7 +72,7 @@ export default function ScheduleTable({
                   {actDays ? <span style={{ fontWeight: 400, color: "#555", fontSize: 11 }}> ({actDays}d)</span> : ""}
                 </td>
                 <td style={cell}>{entry ? fmtDate(entry) : "—"}</td>
-                <td style={cell}>{exit ? fmtDate(exit) : noDates ? <i style={{ color: "#555" }}>after last quarter</i> : "—"}</td>
+                <td style={cell}>{exit ? fmtDate(exit) : noDates ? <i style={{ color: "#555" }}>after last month</i> : "—"}</td>
                 <td style={{ ...cell, borderLeft: "1px solid #e8e8e8" }}>{revbExit ? fmtDate(revbExit) : "—"}</td>
                 <td style={{ ...num, fontWeight: 700, color: slip == null ? "#555" : slip > 0 ? RED_TEXT : GREEN }}>{slip == null ? "—" : signed(slip)}</td>
                 <td style={cell}>

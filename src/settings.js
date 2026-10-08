@@ -1,7 +1,7 @@
 // Remembers the viewer's choices in this browser (localStorage), so a reload keeps the same view.
 // Everything read back is validated: anything unknown or out of range falls back to the default.
 // What-if depths are deliberately not stored, so the app always reopens on real progress.
-import { generateQuarters } from "./engine/projection.js";
+import { generateMonths } from "./engine/projection.js";
 
 const KEY = "avma-visualiser:settings:v1";
 const RATE_MIN = 0.05, RATE_MAX = 2.0;
@@ -72,26 +72,43 @@ export function restoreRevbAdjust(saved, revb) {
   return out;
 }
 
-// "Q3 2026" -> a sortable number.
-const quarterIndex = label => {
+const monthIndex = key => {
+  const m = /^(\d{4})-(\d{2})$/.exec(key ?? "");
+  return m ? +m[1] * 12 + (+m[2] - 1) : null;
+};
+// Older saves held quarters ("Q3 2026"): each quarter's rate applies to its three months.
+const quarterMonths = label => {
   const m = /^Q([1-4]) (\d{4})$/.exec(label ?? "");
-  return m ? +m[2] * 4 + +m[1] : null;
+  if (!m) return [];
+  const first = (+m[1] - 1) * 3;
+  return [0, 1, 2].map(i => `${m[2]}-${String(first + i + 1).padStart(2, "0")}`);
 };
 
 export const serializeTimeline = timeline =>
-  Object.fromEntries(Object.entries(timeline).map(([shaft, qs]) => [shaft, qs.map(q => ({ label: q.label, rate: q.rate }))]));
+  Object.fromEntries(Object.entries(timeline).map(([shaft, ms]) => [shaft, ms.map(m => ({ key: m.key, rate: m.rate }))]));
 
-// Quarters always start at the quarter containing `today` (8 by default). Saved rates are matched by
-// label; if the viewer had added quarters, the list is extended to the last saved one (capped at 40).
+// Months always start at the month containing `today` (24 by default). Saved rates are matched by
+// month key; if the viewer had added months, the list runs to the last saved one (capped at 60).
 export function restoreTimeline(saved, today, defaultRates) {
   const out = {};
   for (const [shaft, defaultRate] of Object.entries(defaultRates)) {
     const list = Array.isArray(saved?.[shaft]) ? saved[shaft] : [];
-    const byLabel = new Map(list.filter(q => okRate(q?.rate) && quarterIndex(q?.label)).map(q => [q.label, q.rate]));
-    const first = generateQuarters(today, 1)[0];
-    const lastSaved = Math.max(0, ...[...byLabel.keys()].map(quarterIndex));
-    const count = Math.min(40, Math.max(8, lastSaved - quarterIndex(first.label) + 1));
-    out[shaft] = generateQuarters(today, count).map(q => ({ ...q, rate: byLabel.get(q.label) ?? defaultRate }));
+    const byKey = new Map();
+    for (const item of list) {
+      if (!okRate(item?.rate)) continue;
+      if (monthIndex(item.key) != null) byKey.set(item.key, item.rate);
+      else for (const k of quarterMonths(item.label)) byKey.set(k, item.rate);
+    }
+    const first = generateMonths(today, 1)[0];
+    const lastSaved = Math.max(0, ...[...byKey.keys()].map(monthIndex));
+    const count = Math.min(60, Math.max(24, lastSaved - monthIndex(first.key) + 1));
+    out[shaft] = generateMonths(today, count, defaultRate).map(m => ({ ...m, rate: byKey.get(m.key) ?? defaultRate }));
   }
   return out;
 }
+
+export const PAPER_SIZES = ["A4", "A3"];
+export const ROLL_WINDOWS = [30, 90]; // header rolling rate, days
+
+export const PERIOD_COUNTS = [0, 3, 6, 9, 12, 18, 24];
+export const restorePeriodCount = (saved, fallback) => (PERIOD_COUNTS.includes(saved) ? saved : fallback);

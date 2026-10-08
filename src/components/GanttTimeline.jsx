@@ -1,13 +1,14 @@
 import { LITHO_COLORS } from "../data/shafts.js";
 import { MS_DAY, daysBetween, fmtDate, fmtShort } from "../engine/projection.js";
+import { textOn } from "../engine/periods.js";
 
 // Bars are sized relative to the row so they grow when rows stretch to fill the pane.
 const LABEL_W = 180, PLAN_TOP = "16%", PROJ_TOP = "52%", BAR_H = "30%";
 
 export default function GanttTimeline({
-  shaft, ganttPlanned, projection, modeLabel, today, projEnd, projDays, ptdDays, setHoveredFm, horizon,
+  shaft, ganttPlanned, projection, modeLabel, today, projEnd, projDays, ptdDays, setHoveredFm, horizon, periods = [],
 }) {
-  // `horizon`: where the Timeline quarters run out before final depth (null otherwise).
+  // `horizon`: where the Timeline months run out before final depth (null otherwise).
   const ganttStart = shaft.mainSinkStart;
   const ends = [
     ...ganttPlanned.map(g => g.exitDate.getTime()),
@@ -29,7 +30,7 @@ export default function GanttTimeline({
   }
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+    <div className="print-fill" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
         {[{ f: "#163D4C", o: 0.2, l: "Geology-rate plan (from main sink start)" }, { f: "litho", o: 1, l: `Projected (${modeLabel})` }].map((leg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -53,6 +54,30 @@ export default function GanttTimeline({
           ))}
         </div>
 
+        {periods.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", height: 20, marginBottom: 2 }}>
+            <div style={{ width: LABEL_W, flexShrink: 0, fontSize: 11, fontWeight: 700, color: "#163D4C" }}>
+              Forecast months
+            </div>
+            <div style={{ flex: 1, position: "relative", height: "100%" }}>
+              {periods.map(p => {
+                const left = pctOf(p.start), width = pctOf(p.end) - left;
+                return (
+                  <div
+                    key={p.key}
+                    title={`${p.label}: ${p.from.toFixed(1)}–${p.to.toFixed(1)}m, ${p.metres.toFixed(1)}m at ${p.rate.toFixed(2)} m/d`}
+                    style={{
+                      position: "absolute", left: `${left}%`, width: `${width}%`, top: 2, bottom: 2, background: p.color,
+                      borderRight: "1px solid #fff", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 10, fontWeight: 700, color: textOn(p.color), whiteSpace: "nowrap",
+                    }}
+                  >{width > 3 ? p.label : ""}</div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {ganttPlanned.map((fm, i) => {
           const ps = (daysBetween(ganttStart, fm.entryDate) / ganttTotalDays) * 100;
           const pw = (fm.days / ganttTotalDays) * 100;
@@ -60,7 +85,7 @@ export default function GanttTimeline({
           const isC = pf?.status === "complete";
           const isA = pf?.status === "active";
           const hp = pf?.entryDate && pf?.exitDate;
-          const partial = !hp && pf?.entryDate && pf?.horizonDate; // quarters end inside this formation
+          const partial = !hp && pf?.entryDate && pf?.horizonDate; // months end inside this formation
           const notReached = horizon && !isC && !pf?.entryDate;
           const barEnd = hp ? pf.exitDate : partial ? pf.horizonDate : null;
           const prs = barEnd ? pctOf(pf.entryDate) : 0;
@@ -104,14 +129,14 @@ export default function GanttTimeline({
                 )}
                 {partial && !isC && (
                   <>
-                    {/* Open-ended: the quarters stop before this formation is finished */}
+                    {/* Open-ended: the months stop before this formation is finished */}
                     <div style={{
                       position: "absolute", left: `${prs}%`, width: `${prw}%`, top: PROJ_TOP, height: BAR_H, minHeight: 5,
                       background: `linear-gradient(to right, ${LITHO_COLORS[fm.code]} 70%, rgba(255,255,255,0.2))`,
                       borderRadius: "2px 0 0 2px", border: "1px solid rgba(0,0,0,0.2)", borderRight: "2px dashed #6d6d6d",
                       boxShadow: isA ? "0 0 0 1.5px #E60033" : "none",
                     }} />
-                    {/* Label before the bar: the bar ends at the edge of the quarters, near the chart's right side */}
+                    {/* Label before the bar: the bar ends at the edge of the months, near the chart's right side */}
                     <div style={{
                       position: "absolute", right: `calc(${100 - prs}% + 6px)`, top: PROJ_TOP, height: BAR_H, minHeight: 5,
                       display: "flex", alignItems: "center", fontSize: 11, fontWeight: 700, color: "#333", whiteSpace: "nowrap",
@@ -122,7 +147,7 @@ export default function GanttTimeline({
                   <div style={{
                     position: "absolute", right: `calc(${100 - horizonPct}% + 6px)`, top: PROJ_TOP, height: BAR_H, minHeight: 5,
                     display: "flex", alignItems: "center", fontSize: 11, fontStyle: "italic", color: "#555", whiteSpace: "nowrap",
-                  }}>not reached by the last quarter</div>
+                  }}>not reached by the last month</div>
                 )}
               </div>
             </div>
@@ -138,7 +163,7 @@ export default function GanttTimeline({
             <div style={{
               position: "absolute", left: `${horizonPct}%`, transform: "translateX(-50%)",
               fontSize: 11, fontWeight: 700, color: "#444", whiteSpace: "nowrap",
-            }}>▲ End of quarters, {fmtDate(horizon)}</div>
+            }}>▲ End of months, {fmtDate(horizon)}</div>
           )}
         </div>
       </div>

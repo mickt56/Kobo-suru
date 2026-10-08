@@ -15,7 +15,7 @@ function Kpi({ label, value, color = "#fff", sub, labelStyle }) {
 
 export default function KPIBar({
   activeShaft, setActiveShaft, shaft, asOf, curDepth, actualDepth, overridden, resetDepth,
-  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap, onPrint,
+  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap, onPrint, paper, setPaper, rollingRate, rollWindow, setRollWindow,
 }) {
   const behind = revbGap.variance < 0;
   return (
@@ -44,9 +44,23 @@ export default function KPIBar({
         ))}
         <button
           onClick={onPrint}
-          title="Print this shaft and tab, or choose Save as PDF in the print dialog"
+          title={`Print this shaft and tab on ${paper} landscape, or choose Save as PDF in the print dialog`}
           style={{ marginLeft: 8, padding: "6px 12px", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, cursor: "pointer", fontWeight: 700, fontSize: 12, background: "transparent", color: "#fff" }}
         >Print / PDF</button>
+        <div role="group" aria-label="Paper size" style={{ display: "flex", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, overflow: "hidden" }}>
+          {["A4", "A3"].map(s => (
+            <button
+              key={s}
+              onClick={() => setPaper(s)}
+              aria-pressed={paper === s}
+              title={`Print on ${s} landscape`}
+              style={{
+                padding: "6px 8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12,
+                background: paper === s ? "#fff" : "transparent", color: paper === s ? "#163D4C" : "#fff",
+              }}
+            >{s}</button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 22, alignItems: "flex-start", marginLeft: "auto", flexWrap: "wrap" }}>
@@ -64,9 +78,29 @@ export default function KPIBar({
         )}
         <Kpi label="Remaining" value={`${totalRemaining.toFixed(1)}m`} />
         <Kpi label="Complete" value={`${pctComplete}%`} color={GOLD} />
-        <Kpi label="Wtd rate" value={weightedRate > 0 ? `${weightedRate.toFixed(2)} m/d` : "—"} />
+        {/* Achieved: rolling 30 / 90 days of actual progress (smooths month-start spikes). */}
+        <div title={`Actual advance over the last ${rollWindow} days ÷ ${rollWindow}, from the daily readings`}>
+          <div style={LABEL}>Rolling rate</div>
+          <div style={{ color: "#fff", fontSize: 16, fontWeight: 700, lineHeight: 1.2, whiteSpace: "nowrap" }}>{rollingRate.toFixed(2)} m/d</div>
+          <div role="group" aria-label="Rolling rate window" style={{ display: "flex", gap: 2, marginTop: 1 }}>
+            {[30, 90].map(w => (
+              <button
+                key={w} onClick={() => setRollWindow(w)} aria-pressed={rollWindow === w}
+                style={{
+                  padding: "0 4px", fontSize: 10, lineHeight: "14px", borderRadius: 2, cursor: "pointer", fontWeight: 700,
+                  border: "1px solid rgba(255,255,255,0.5)",
+                  background: rollWindow === w ? "rgba(255,255,255,0.9)" : "transparent", color: rollWindow === w ? NAVY : "#fff",
+                }}
+              >{w}d</button>
+            ))}
+          </div>
+        </div>
+        <Kpi
+          label="Fcst rate" value={weightedRate > 0 ? `${weightedRate.toFixed(2)} m/d` : "—"}
+          sub="avg to finish"
+        />
         <Kpi label="Days left" value={`${projDays}`} color={GOLD} />
-        <Kpi label="Projected end" value={projEnd ? fmtDate(projEnd) : "Extend qtrs"} color={GOLD} sub={modeLabel} />
+        <Kpi label="Projected end" value={projEnd ? fmtDate(projEnd) : "Extend months"} color={GOLD} sub={modeLabel} />
         <Kpi
           label="vs Rev-B"
           value={`${behind ? "−" : "+"}${Math.abs(revbGap.variance).toFixed(1)}m`}
