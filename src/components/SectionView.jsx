@@ -246,7 +246,8 @@ export default function SectionView({ shafts, activeShaft, setActiveShaft, today
   // Print (html.printing, see App.css): lay out at a fixed virtual page and scale it to the paper
   // width, so both shafts fit one A4 landscape page.
   const printing = typeof document !== "undefined" && document.documentElement.classList.contains("printing");
-  const PRINT_W = 1380, PRINT_H = 750;
+  const a3 = printing && document.documentElement.classList.contains("paper-a3");
+  const PRINT_W = 1380, PRINT_H = a3 ? 820 : 750; // A3's page is relatively a little taller
   const printScale = printing && measured.width ? measured.width / PRINT_W : 1;
   const { width, height } = printing ? { width: PRINT_W, height: PRINT_H } : measured;
   const zoomNow = printing ? 1 : zoom;

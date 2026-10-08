@@ -115,7 +115,7 @@ it on Teams; it opens by double-clicking and works offline. It's a snapshot: reb
 update.
 
 For a report instead, use **Print / PDF** in the app's header. It prints the current shaft and tab
-on A4 landscape; choose "Save as PDF" in the print dialog.
+on A4 or A3 landscape: pick the size with the **A4 / A3** buttons next to it (A3 prints larger, for presentations). Choose "Save as PDF" in the print dialog.
 
 ---
 

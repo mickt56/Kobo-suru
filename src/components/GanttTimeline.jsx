@@ -30,7 +30,7 @@ export default function GanttTimeline({
   }
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+    <div className="print-fill" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div style={{ display: "flex", gap: 12, marginBottom: 6 }}>
         {[{ f: "#163D4C", o: 0.2, l: "Geology-rate plan (from main sink start)" }, { f: "litho", o: 1, l: `Projected (${modeLabel})` }].map((leg, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>

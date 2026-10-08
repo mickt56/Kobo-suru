@@ -14,7 +14,7 @@ import { forecastPeriods } from "./engine/periods.js";
 import { WINDOWS, STATS, scenarioStats, rollingRate, constantRatePoints } from "./engine/stats.js";
 import {
   readSettings, writeSettings, clearSettings, pick,
-  restoreRates, restoreChoice, restoreTimeline, serializeTimeline, restoreRevbAdjust, restorePeriodCount,
+  restoreRates, restoreChoice, restoreTimeline, serializeTimeline, restoreRevbAdjust, restorePeriodCount, PAPER_SIZES,
 } from "./settings.js";
 
 import PatternDefs from "./components/PatternDefs.jsx";
@@ -104,6 +104,20 @@ export default function App() {
   // Forecast period bands (Deswik-style): how many months ahead to colour. 0 = off.
   const [periodCount, setPeriodCount] = useState(() => restorePeriodCount(saved.periods, DEFAULT_PERIODS));
 
+  // Print paper size. The @page rule is written here (not in App.css) so the browser's print
+  // dialog, and Ctrl+P, pick up the chosen size; html.paper-a3 widens the print layout.
+  const [paper, setPaper] = useState(() => pick(saved.paper, PAPER_SIZES, "A4"));
+  useEffect(() => {
+    let tag = document.getElementById("page-size");
+    if (!tag) {
+      tag = document.createElement("style");
+      tag.id = "page-size";
+      document.head.appendChild(tag);
+    }
+    tag.textContent = `@page { size: ${paper} landscape; margin: 10mm; }`;
+    document.documentElement.classList.toggle("paper-a3", paper === "A3");
+  }, [paper]);
+
   // Stats mode: a constant rate taken from the shaft's monthly history (window + statistic).
   const [statsChoice, setStatsChoice] = useState(() =>
     restoreChoice(saved.statsChoice, DEFAULT_CHOICE, WINDOWS.map(w => w.id), STATS.map(s => s.id)));
@@ -115,9 +129,9 @@ export default function App() {
   useEffect(() => {
     writeSettings({
       shaft: activeShaft, tab: rightTab, mode: rateMode, rates, statsChoice,
-      timeline: serializeTimeline(timelineRates), revbAdjust, periods: periodCount,
+      timeline: serializeTimeline(timelineRates), revbAdjust, periods: periodCount, paper,
     });
-  }, [activeShaft, rightTab, rateMode, rates, statsChoice, timelineRates, revbAdjust, periodCount]);
+  }, [activeShaft, rightTab, rateMode, rates, statsChoice, timelineRates, revbAdjust, periodCount, paper]);
 
   // Print: lay the page out at A4-landscape width first so the charts resize, then print.
   const printView = useCallback(() => {
@@ -146,6 +160,7 @@ export default function App() {
     setTimelineRates(restoreTimeline(null, TODAY, DEFAULT_MONTH_RATE));
     setRevbAdjust(NO_ADJUST);
     setPeriodCount(DEFAULT_PERIODS);
+    setPaper("A4");
     setDepthOverrides({ VS7: null, VS8: null });
   }, []);
   const shaftStats = STATS_BY[activeShaft];
@@ -359,6 +374,8 @@ export default function App() {
         modeLabel={modeLabel}
         revbGap={revbGap}
         onPrint={printView}
+        paper={paper}
+        setPaper={setPaper}
       />
 
       <div style={{ flex: 1, minHeight: 0, display: "flex" }}>

@@ -15,7 +15,7 @@ function Kpi({ label, value, color = "#fff", sub, labelStyle }) {
 
 export default function KPIBar({
   activeShaft, setActiveShaft, shaft, asOf, curDepth, actualDepth, overridden, resetDepth,
-  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap, onPrint,
+  totalRemaining, pctComplete, weightedRate, projDays, projEnd, modeLabel, revbGap, onPrint, paper, setPaper,
 }) {
   const behind = revbGap.variance < 0;
   return (
@@ -44,9 +44,23 @@ export default function KPIBar({
         ))}
         <button
           onClick={onPrint}
-          title="Print this shaft and tab, or choose Save as PDF in the print dialog"
+          title={`Print this shaft and tab on ${paper} landscape, or choose Save as PDF in the print dialog`}
           style={{ marginLeft: 8, padding: "6px 12px", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, cursor: "pointer", fontWeight: 700, fontSize: 12, background: "transparent", color: "#fff" }}
         >Print / PDF</button>
+        <div role="group" aria-label="Paper size" style={{ display: "flex", border: "1px solid rgba(255,255,255,0.6)", borderRadius: 4, overflow: "hidden" }}>
+          {["A4", "A3"].map(s => (
+            <button
+              key={s}
+              onClick={() => setPaper(s)}
+              aria-pressed={paper === s}
+              title={`Print on ${s} landscape`}
+              style={{
+                padding: "6px 8px", border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12,
+                background: paper === s ? "#fff" : "transparent", color: paper === s ? "#163D4C" : "#fff",
+              }}
+            >{s}</button>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 22, alignItems: "flex-start", marginLeft: "auto", flexWrap: "wrap" }}>

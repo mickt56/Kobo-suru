@@ -107,5 +107,7 @@ export function restoreTimeline(saved, today, defaultRates) {
   return out;
 }
 
+export const PAPER_SIZES = ["A4", "A3"];
+
 export const PERIOD_COUNTS = [0, 3, 6, 9, 12, 18, 24];
 export const restorePeriodCount = (saved, fallback) => (PERIOD_COUNTS.includes(saved) ? saved : fallback);
