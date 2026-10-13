@@ -36,7 +36,8 @@ export function computeProjection(shaft, rates, curDepth, today) {
     const rem = fm.from < curDepth ? fm.to - curDepth : thick;
     const rate = rates[getRateKey(fm.code)] || 0.5;
     const days = rem / rate;
-    const isActive = fm.from < curDepth;
+    // Started: below its top, or at its top with a recorded entry date (boundary just reached).
+    const isActive = fm.from < curDepth || (!!fm.aStart && fm.from <= curDepth);
     const entry = isActive && fm.aStart ? fm.aStart : new Date(runDate);
     const exit = addDays(runDate, days);
     results.push({
@@ -112,7 +113,8 @@ export function computeTimelineFormations(shaft, points, curDepth) {
     if (fm.to <= curDepth) {
       return { ...fm, thickness: thick, remaining: 0, days: 0, rate: 0, entryDate: null, exitDate: null, status: "complete" };
     }
-    const isActive = fm.from < curDepth;
+    // Started: below its top, or at its top with a recorded entry date (boundary just reached).
+    const isActive = fm.from < curDepth || (!!fm.aStart && fm.from <= curDepth);
     const rem = isActive ? fm.to - curDepth : thick;
     const start = isActive ? points[0].date : timeAt(fm.from);
     const end = timeAt(fm.to);

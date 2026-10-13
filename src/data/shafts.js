@@ -47,10 +47,12 @@ export const VS8 = {
     { name: "Newport Formation",       code: "NPFM", from: 187, to: 217, aStart: new Date(2025, 7, 28), aFin: new Date(2025, 9, 16) },
     { name: "Garie Formation",         code: "GRFM", from: 217, to: 222, aStart: new Date(2025, 9, 16), aFin: new Date(2025, 9, 21) },
     { name: "Bald Hill Claystone",     code: "BACS", from: 222, to: 251, aStart: new Date(2025, 9, 21), aFin: new Date(2025, 10, 30) },
-    { name: "Bulgo Sandstone",         code: "BGSS", from: 251, to: 478, aStart: new Date(2025, 10, 30), aFin: new Date(2026, 9, 10) },
-    // Entered 10 Oct 2026: first reading past the model boundary (477.3m 9 Oct -> 480.1m 10 Oct). To confirm with the geotech.
-    { name: "Stanwell Park Claystone", code: "SPCS", from: 478, to: 485, aStart: new Date(2026, 9, 10) },
-    { name: "Scarborough Sandstone",   code: "SBSS", from: 485, to: 499 },
+    // Bulgo/Stanwell Park and Stanwell Park/Scarborough boundaries per site geotechnical inspections
+    // (model: 478m and 485m). SPCS met ~473.2m during the cycle from 473.2m (slaking-ground inspection
+    // 3 Oct 2026); back into sandstone (SBSS) at 481.5m on 12 Oct 2026.
+    { name: "Bulgo Sandstone",         code: "BGSS", from: 251, to: 473.2, aStart: new Date(2025, 10, 30), aFin: new Date(2026, 9, 3) },
+    { name: "Stanwell Park Claystone", code: "SPCS", from: 473.2, to: 481.5, aStart: new Date(2026, 9, 3), aFin: new Date(2026, 9, 12) },
+    { name: "Scarborough Sandstone",   code: "SBSS", from: 481.5, to: 499, aStart: new Date(2026, 9, 12) },
     { name: "Wombarra Claystone",      code: "WBCS", from: 499, to: 531 },
     { name: "Coalcliff Sandstone",     code: "CCSS", from: 531, to: 548.1 },
   ],
