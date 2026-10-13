@@ -4,11 +4,16 @@ The **Rev-B tracking workbook is the single source of actual depths.** The app t
 depth and the latest reading from its daily actuals, so a routine update is: import the workbook,
 check, commit. Everything else is occasional.
 
+The **AVMA Report Feed** (`AVMA_Report_Feed.xlsx`) works too: it carries the same `VS7 Rev-B` /
+`VS8 Rev-B` daily sheets, updated each shift. It has no `Rev-B Tables` sheet, so the import keeps the
+milestone table from the last Rev-B workbook (it says so). Import the Rev-B workbook itself when
+milestone dates change, e.g. an event such as a water ring is completed.
+
 ## At a glance
 
 | When | What to do | File that changes |
 |---|---|---|
-| **Every update** (weekly, month-end, or whenever you have a new copy of the workbook) | Import the workbook | `src/data/revb.js` (generated) |
+| **Every update** (weekly, month-end, or whenever you have a new copy of the workbook or Report Feed) | Import the workbook / feed | `src/data/revb.js` (generated) |
 | A formation boundary was crossed | Add the transition date | `src/data/shafts.js` |
 | You have figures newer than your latest workbook | Add a dated reading | `src/data/progression.js` |
 | Someone needs a copy without installing anything | Build the single-file version | `dist-single/AVMA_Schedule_Visualiser.html` |
@@ -137,6 +142,7 @@ on A4 or A3 landscape: pick the size with the **A4 / A3** buttons next to it (A3
 | `Rev-B Tables: task table at column … missing …` | A task-table heading changed. Needed: **Task Name**, **Rev-B Advance m/day**, **Metres**, **Duration**, **Scheduled Date**, **Actual Date**, **Schedule Cumulative Depth**. |
 | `Rev-B Tables: cannot tell which shaft …` | Task names in a table must mostly include "VS7" or "VS8". |
 | `… formula cell(s) have no stored value …` or `… no rows with a date and a Schedule Cumulative Depth` | The workbook was saved without calculating (e.g. by a tool other than Excel). Open it in Excel, save, and import again. |
+| `No "Rev-B Tables" sheet in … keeping the milestone table from the previous import` | Expected for the AVMA Report Feed: depths and the daily schedule update, milestones don't. Import the Rev-B tracking workbook when milestone dates change. |
 | Import fails with a file-lock error | Close the workbook in Excel and retry. |
 | The import's "actuals to …" date is older than expected | The daily sheets' **Actual Shaft Depth** column is linked to the shaft log workbooks (`VS7_ShaftLog` / `VS8_ShaftLog`). Open the Rev-B workbook with the shaft logs available, let Excel update the links, save, and import again. |
 | Rev-B mode lost some changed rates or durations after an import | They're remembered by milestone name, so a milestone renamed in the workbook's **Rev-B Tables** starts again from its Rev-B value. |
@@ -149,5 +155,5 @@ on A4 or A3 landscape: pick the size with the **A4 / A3** buttons next to it (A3
 
 - `src/data/revb.js`: it's generated. Re-import instead; hand edits are overwritten.
 - Rows in `src/data/progression.js` for dates the workbook covers: they're ignored.
-- VS8's final depth (548.1m) unless the design changes. Rev-B's daily sheet runs to 561m and is
-  plotted as supplied.
+- VS8's final depth (548.1m) unless the design changes. The Report Feed's VS8 daily schedule stops
+  at 548.1m (older Rev-B workbooks ran on to 561m); either is plotted as supplied.
