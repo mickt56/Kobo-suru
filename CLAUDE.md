@@ -17,14 +17,14 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 - **`src/engine/stats.js`** — rate statistics from past performance: `monthlyHistory`, `rateStats`, `scenarioStats` (per window), `rollingRate`, `constantRatePoints`. Drives the Stats rate mode and the Scenarios tab.
 - **`scripts/build-single.mjs`** — `npm run build:single`; the app as one offline HTML file in `dist-single/` (gitignored).
 - **`docs/UPDATING.md`** — the user-facing update guide; keep it in step with any change to the update flow, file names or import messages.
-- **`scripts/import-revb.mjs`** — `npm run import:revb -- <workbook.xlsx>`; reads sheets `VS7 Rev-B`, `VS8 Rev-B`, `Rev-B Tables`, locating columns by header text.
+- **`scripts/import-revb.mjs`** — `npm run import:revb -- <workbook.xlsx>`; reads sheets `VS7 Rev-B`, `VS8 Rev-B` and, if present, `Rev-B Tables`, locating columns by header text. The AVMA Report Feed (`AVMA_Report_Feed.xlsx`) has the two daily sheets but no `Rev-B Tables`: the import then keeps the milestones already in `revb.js` and notes it in the file header.
 - **`src/settings.js`** — remembers the viewer's choices in `localStorage` (key `avma-visualiser:settings:v1`) and validates everything read back. Stored: shaft, tab, rate mode, geology rates, scenario choice, Timeline monthly rates (by month key, `2026-10`; older quarterly saves are converted), Rev-B stage changes (by milestone name), forecast period count, print paper size, header rolling-rate window (30/90 days). What-if depths are deliberately not stored.
 - **`src/components/`** — presentation only. State lives in `App.jsx` and is passed down.
 - **`src/App.jsx`** — composition, state ownership, memoised derived values. Assembles `SHAFTS = { VS7: {...VS7, actual: VS7_ACTUAL}, VS8: {...VS8, actual: VS8_ACTUAL} }`.
 
 ## Update flow
 
-1. Re-import the Rev-B workbook: `npm run import:revb -- <path>`. This is normally the whole update; month-end and latest depths come from its daily actuals.
+1. Re-import the Rev-B workbook or the AVMA Report Feed: `npm run import:revb -- <path>`. This is normally the whole update; month-end and latest depths come from its daily actuals.
 2. If a formation boundary was crossed, add `aStart`/`aFin` (and adjust `to`/`from` if met at a different depth) in `src/data/shafts.js`.
 3. Figures newer than the latest workbook: add a dated row to `src/data/progression.js`; the next import reports when it's covered and can be deleted.
 4. Done — no other files touched.
@@ -51,7 +51,7 @@ Vite + React local web app for VS7 / VS8 shaft sink scheduling. Decomposed from 
 - Readability: no text below 10px (body 11–12px); muted text #555/#666; red *text* uses `RED_TEXT` #C4002B (brand #E60033 stays for fills, lines and the header). Keep new UI within WCAG AA contrast.
 - Print: the header's Print / PDF button adds `html.printing` (page width) so charts resize, then calls `window.print()`. Paper is A4 or A3 landscape (header toggle, stored as `paper`): App writes the `@page` rule into a `<style id="page-size">` and sets `html.paper-a3`; A3 lays out at 1240px zoomed ×1.215 to fill the sheet (A4: 1040px, unzoomed). CSS hooks in `App.css`: `.no-print` (side panels, tab bar, shaft toggle), `.print-only` (print heading), `.print-chart` (fixed chart height), `.print-fill` (fills the page height, e.g. the Gantt), `.app-root`, `.tab-pane`. The Section tab sizes itself for print from `html.printing` / `html.paper-a3`. New UI that shouldn't print needs `no-print`.
 - Accessibility: anything clickable is a `<button>` (not a clickable `td`/`div`); every input has a label or `aria-label`; toggles use `aria-pressed`; views are `role="tab"`/`tabpanel`. Keyboard focus shows a gold ring (`:focus-visible` in `App.css`) — don't override `outline` inline on focusable elements.
-- VS8's app final depth is 548.1m; the Rev-B daily sheet runs to 561m and is plotted as supplied.
+- VS8's app final depth is 548.1m. The Report Feed's VS8 daily schedule stops at 548.1m from 8 Sep 2026 (older Rev-B workbooks ran on to 561m); it's plotted as supplied.
 - The `LOWER` rate group covers Bulli Seam and everything below in VS7. VS8 terminates within Coalcliff SS so its `LOWER` slider is auto-hidden by `RatesPanel`.
 
 ## What NOT to do

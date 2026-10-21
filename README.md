@@ -25,7 +25,7 @@ npm run preview
 In short, the Rev-B tracking workbook is the single source of actual depths:
 
 ```bash
-npm run import:revb -- "path/to/Rev-B_Tracking.xlsx"   # every update
+npm run import:revb -- "path/to/Rev-B_Tracking.xlsx"   # every update (or AVMA_Report_Feed.xlsx)
 npm run build:single                                    # optional: one-file copy to share
 ```
 
